@@ -14,7 +14,8 @@ import {
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebaseConfig';
+// import { db } from '../services/firebaseConfig';
+import { db } from '../firebaseConfig';
 
 const PostScreen = ({ navigation }) => {
   const [thoughtText, setThoughtText] = useState('');

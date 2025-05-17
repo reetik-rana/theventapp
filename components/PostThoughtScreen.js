@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebaseConfig'; // Make sure this path is correct
+import { db } from '../firebaseConfig'; // Make sure this path is correct
 
 const PostThoughtScreen = () => {
   const [thoughtText, setThoughtText] = useState('');

@@ -12,7 +12,8 @@ import {
 import ThoughtCard from '../components/ThoughtCard';
 import Header from '../components/Header';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../services/firebaseConfig';
+// import { db } from '../services/firebaseConfig';
+import { db } from '../firebaseConfig';
 import PostThoughtScreen from '../components/PostThoughtScreen'; // Import the PostThoughtScreen
 
 const HomeScreen = () => {

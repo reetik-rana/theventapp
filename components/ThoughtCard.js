@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { doc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '../services/firebaseConfig';
+import { db } from '../firebaseConfig';
 
 const ThoughtCard = ({ thought }) => {
   const [liked, setLiked] = useState(false);
