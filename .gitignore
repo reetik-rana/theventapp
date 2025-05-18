@@ -40,5 +40,5 @@ node_modules/
 .expo-shared/
 .DS_Store
 
-#apihide
+#apihide very crucial secret macho
 firebaseConfig.js
