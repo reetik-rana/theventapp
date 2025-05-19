@@ -101,63 +101,102 @@ const PostScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f8f8', // Light gray background
+    padding: 20,
   },
   keyboardAvoid: {
     flex: 1,
   },
   content: {
-    padding: 16,
     flex: 1,
-    justifyContent: 'space-between', // Distribute space
+    paddingVertical: 20, // Add some vertical padding to the content area
   },
   label: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#333', // Dark gray text
+    marginBottom: 10, // Slightly more margin below the label
+    ...Platform.select({
+      web: {
+        fontSize: 24, // Increase font size for web
+      },
+    }),
   },
   subtitle: {
     fontSize: 14,
-    color: '#757575',
-    marginBottom: 20,
+    color: '#777', // Medium gray text
+    marginBottom: 20, // More margin below the subtitle
+    ...Platform.select({
+      web: {
+        fontSize: 18, // Increase font size for web
+      },
+    }),
   },
   inputScrollView: {
-    flexGrow: 1, // Allow scrolling area to grow
-    backgroundColor: 'white',
+    backgroundColor: '#fff', // White background for the input
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    padding: 16,
+    borderColor: '#ddd', // Light gray border
+    padding: 15,
     fontSize: 16,
     lineHeight: 24,
-    color: '#212121',
-    marginBottom: 8, // Space between input and counter
-    maxHeight: 200, // Optional: Limit initial height
+    color: '#333',
+    marginBottom: 15, // Margin below the input area
+    maxHeight: 200,
+    ...Platform.select({
+      web: {
+        fontSize: 20, // Increase font size for web
+        lineHeight: 30, // Adjust line height for better readability
+      },
+    }),
+  },
+  input: {
+    flexGrow: 1,
+    textAlignVertical: 'top',
+    padding: 0, // Remove padding from the TextInput itself as it's in the ScrollView
+    fontSize: 16,
+    lineHeight: 24,
+    ...Platform.select({
+      web: {
+        fontSize: 20, // Increase font size for web
+        lineHeight: 30, // Adjust line height for better readability
+      },
+    }),
   },
   counterContainer: {
     alignItems: 'flex-end',
-    marginBottom: 20, // Space between counter and button
+    marginBottom: 20,
   },
   counter: {
     fontSize: 12,
-    color: '#757575',
+    color: '#777',
+    ...Platform.select({
+      web: {
+        fontSize: 16, // Increase font size for web
+      },
+    }),
   },
   buttonContainer: {
     marginBottom: 20,
   },
   postButton: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#007bff', // Professional blue
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   disabledButton: {
-    backgroundColor: '#b39ddb',
+    backgroundColor: '#ccc',
   },
   postButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+    ...Platform.select({
+      web: {
+        fontSize: 20, // Increase font size for web
+      },
+    }),
   },
 });
 

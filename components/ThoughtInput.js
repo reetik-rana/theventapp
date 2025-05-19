@@ -21,12 +21,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
-    minHeight: 120,
+    minHeight: 120, // You can adjust this initial height
+    maxHeight: 300, // Add this to control the maximum visible height before scrolling
     fontSize: 16,
     lineHeight: 24,
     color: '#212121',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    textAlignVertical: 'top',
   },
 });
 
