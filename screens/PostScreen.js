@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
     maxHeight: 200,
     ...Platform.select({
       web: {
-        fontSize: 20, // Increase font size for web
-        lineHeight: 30, // Adjust line height for better readability
+        fontSize: 40, // Increase font size for web
+        lineHeight: 40, // Adjust line height for better readability
       },
     }),
   },
@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     ...Platform.select({
       web: {
-        fontSize: 20, // Increase font size for web
-        lineHeight: 30, // Adjust line height for better readability
+        fontSize: 40, // Increase font size for web
+        lineHeight: 40, // Adjust line height for better readability
       },
     }),
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     color: '#777',
     ...Platform.select({
       web: {
-        fontSize: 16, // Increase font size for web
+        fontSize: 20, // Increase font size for web
       },
     }),
   },
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     ...Platform.select({
       web: {
-        fontSize: 20, // Increase font size for web
+        fontSize: 30, // Increase font size for web
       },
     }),
   },

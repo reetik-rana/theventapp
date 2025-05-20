@@ -9,13 +9,14 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
-  Modal, // Import the Modal component
-  ScrollView, // Import ScrollView for scrollable modal content
+  Modal,
+  ScrollView,
 } from 'react-native';
 import ThoughtCard from '../components/ThoughtCard';
 import Header from '../components/Header';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 const HomeScreen = () => {
   const [thoughts, setThoughts] = useState([]);
@@ -25,6 +26,7 @@ const HomeScreen = () => {
   const [selectedThought, setSelectedThought] = useState(null);
 
   const numColumns = Platform.OS === 'web' ? 4 : 1;
+  const navigation = useNavigation(); // Get the navigation object
 
   const fetchThoughts = async () => {
     setRefreshing(true);
@@ -59,8 +61,7 @@ const HomeScreen = () => {
   };
 
   const handlePostButtonPress = () => {
-    // Assuming you have navigation set up
-    // navigation.navigate('Post');
+    navigation.navigate('Post'); // Navigate to the 'Post' screen
   };
 
   const openModal = (thought) => {
@@ -113,7 +114,6 @@ const HomeScreen = () => {
           />
         )}
 
-        {/* Modal for displaying full thought */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -154,6 +154,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     marginBottom: 16,
   },
+  cardContainer: {
+    padding: 8,
+    ...Platform.select({
+      web: {
+        flex: 1,
+        maxWidth: '25%',
+      },
+    }),
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -181,7 +190,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     margin: 16,
-    alignItems: 'center',
+    alignSelf: 'center', // Center the button horizontally
   },
   postButtonText: {
     color: 'white',
@@ -197,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalView: {
     backgroundColor: 'white',
