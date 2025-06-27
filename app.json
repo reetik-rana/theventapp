@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "thevent",
+    "slug": "thevent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/ventlogo.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/ventlogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ventlogo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.bawayaga.thevent"
+    },
+    "web": {
+      "favicon": "./assets/ventlogo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "60ebc278-cb73-4b21-9a01-23ae89ea58e1"
+      }
+    },
+    "owner": "bawayaga"
+  }
+}
