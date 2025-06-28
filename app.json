@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/ventlogo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bawayaga.thevent"
+      "package": "com.bawayaga.thevent",
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/ventlogo.png"
