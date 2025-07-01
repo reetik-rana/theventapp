@@ -3,10 +3,11 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
 import AboutScreen from './screens/AboutScreen';
-// import ProfileScreen from './screens/ProfileScreen'; // Keep commented - file doesn't exist
+import ProfileScreen from './screens/ProfileScreen';
 
 import AuthScreen from './screens/AuthScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -26,19 +27,26 @@ function MainTabs() {
           } else if (route.name === 'Post') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           } else if (route.name === 'About') {
-            iconName = focused ? 'information' : 'information-outline';
+            iconName = focused ? 'information-circle' : 'information-circle-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#6200ee',
+        tabBarActiveTintColor: '#6200ee', 
         tabBarInactiveTintColor: 'gray',
-        headerShown: false,
+        headerShown: false, 
+        tabBarStyle: { 
+        },
+        tabBarLabelStyle: { 
+        }
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Post" component={PostScreen} />
       <Tab.Screen name="About" component={AboutScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} /> 
     </Tab.Navigator>
   );
 }

@@ -52,5 +52,4 @@ navigation/AppNavigator.js
 navigation
 screens/LoginScreen.js
 screens/RegisterScreen.js
-screens/ProfileScreen.js
 utils/storage.js
