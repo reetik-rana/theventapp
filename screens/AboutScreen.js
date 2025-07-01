@@ -48,7 +48,7 @@ const AboutScreen = () => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.title}>The Vent</Text>
-          <Text style={styles.version}>Version 1.0.0</Text>
+          <Text style={styles.version}>Version 1.1.0</Text>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>What is The Vent?</Text>
