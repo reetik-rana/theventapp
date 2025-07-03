@@ -1,4 +1,4 @@
-// screens/HomeScreen.js (Option A: Displaying ONLY 'posts')
+// screens/HomeScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -7,16 +7,17 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
-  Alert 
-} 
-from 'react-native';
+  Alert
+} from 'react-native';
 import Header from '../components/Header';
-import { db } from '../firebaseConfig'; // Your Firestore instance
+import { db } from '../firebaseConfig';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { useTheme } from '../context/ThemeContext';
 
 const HomeScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { colors, isDarkMode } = useTheme();
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
@@ -26,35 +27,34 @@ const HomeScreen = () => {
       querySnapshot.forEach((doc) => {
         fetchedPosts.push({ id: doc.id, ...doc.data() });
       });
-      setPosts(fetchedPosts); // Update state with fetched posts
+      setPosts(fetchedPosts);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching posts:', error); //  Updated error message
+      console.error('Error fetching posts:', error);
       setLoading(false);
-      Alert.alert('Error', 'Failed to load posts.'); // Display an alert to the user
+      Alert.alert('Error', 'Failed to load posts.');
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading posts...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text }}>Loading posts...</Text>
       </View>
     );
   }
 
-  // Render a single post item
   const renderItem = ({ item }) => (
-    <View style={styles.postItem}>
-      <Text style={styles.postAuthor}>
+    <View style={[styles.postItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.postAuthor, { color: colors.primary }]}>
         {item.username ? item.username : item.anonymousId || 'Anonymous'}
       </Text>
-      <Text style={styles.postText}>{item.text}</Text>
+      <Text style={[styles.postText, { color: colors.text }]}>{item.text}</Text>
       {item.createdAt && (
-        <Text style={styles.postTimestamp}>
+        <Text style={[styles.postTimestamp, { color: colors.placeholder }]}>
           {new Date(item.createdAt.toDate()).toLocaleString()}
         </Text>
       )}
@@ -62,11 +62,11 @@ const HomeScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="All Thoughts" /> 
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Header tagline="We listen and We don't judge" />
       {posts.length === 0 ? (
         <View style={styles.noPostsContainer}>
-          <Text style={styles.noPostsText}>No posts yet. Share your first thought!</Text>
+          <Text style={[styles.noPostsText, { color: colors.text }]}>No posts yet. Share your first thought!</Text>
         </View>
       ) : (
         <FlatList
@@ -88,13 +88,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
   },
   listContentContainer: {
     padding: 20,
   },
   postItem: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 15,
     marginBottom: 10,
@@ -103,21 +101,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
     elevation: 2,
+    borderWidth: 1,
   },
   postAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#007bff',
     marginBottom: 5,
   },
   postText: {
     fontSize: 16,
-    color: '#333',
     lineHeight: 24,
   },
   postTimestamp: {
     fontSize: 12,
-    color: '#999',
     marginTop: 10,
     textAlign: 'right',
   },
@@ -128,7 +124,6 @@ const styles = StyleSheet.create({
   },
   noPostsText: {
     fontSize: 18,
-    color: '#777',
   },
 });
 

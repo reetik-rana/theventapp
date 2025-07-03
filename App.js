@@ -1,4 +1,5 @@
-import React from 'react';
+// App.js
+import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,18 +9,21 @@ import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
 import AboutScreen from './screens/AboutScreen';
 import ProfileScreen from './screens/ProfileScreen';
-
 import AuthScreen from './screens/AuthScreen';
+import SplashScreen from './screens/SplashScreen'; // NEW: Import SplashScreen
+
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
-// Tab Navigator for authenticated users
 function MainTabs() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color: tabIconColor, size }) => {
           let iconName;
 
           if (route.name === 'Home') {
@@ -32,42 +36,62 @@ function MainTabs() {
             iconName = focused ? 'person' : 'person-outline';
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName} size={size} color={tabIconColor} />;
         },
-        tabBarActiveTintColor: '#6200ee', 
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false, 
-        tabBarStyle: { 
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.text,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          paddingBottom: 5,
+          height: 60,
         },
-        tabBarLabelStyle: { 
-        }
+        tabBarLabelStyle: {
+          fontSize: 12,
+        },
+        headerShown: false,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Post" component={PostScreen} />
       <Tab.Screen name="About" component={AboutScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} /> 
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
 
-// Main App component with AuthProvider and conditional rendering
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
 
 function AppContent() {
   const { currentUser, loading } = useAuth();
+  const { colors } = useTheme();
+
+  const [showSplash, setShowSplash] = useState(true); // NEW: State for splash screen
+
+  useEffect(() => { // NEW: useEffect to hide splash screen after 2 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000); // 2000 milliseconds = 2 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) { // NEW: Render SplashScreen if showSplash is true
+    return <SplashScreen />;
+  }
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Loading authentication...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading authentication...</Text>
       </View>
     );
   }
@@ -84,11 +108,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#333',
   },
 });

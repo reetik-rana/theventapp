@@ -1,56 +1,72 @@
 // screens/ProfileScreen.js
 import React from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
-import { useAuth } from '../context/AuthContext'; // Adjust path if needed
-import { CommonActions } from '@react-navigation/native'; // For resetting navigation stack
+import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { CommonActions } from '@react-navigation/native';
+import Header from '../components/Header';
 
 export default function ProfileScreen({ navigation }) {
-  const { appUser, currentUser, loading, logout } = useAuth(); // Get user and logout function
+  const { appUser, currentUser, loading, logout } = useAuth();
+  const { theme, toggleTheme, colors, isDarkMode } = useTheme();
 
   const handleLogout = async () => {
     try {
       await logout();
-      // After logout, reset the navigation stack to go back to the AuthScreen
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Auth' }], // Assuming your AuthScreen route name is 'Auth'
+          routes: [{ name: 'Auth' }],
         })
       );
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Failed to log out. Please try again.');
+      Alert.alert('Failed to log out', 'Please try again.');
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading user data...</Text>
-      </View>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text }}>Loading user data...</Text>
+      </SafeAreaView>
     );
   }
 
-  // Ensure appUser and currentUser exist before trying to access their properties
   if (!appUser || !currentUser) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Not Logged In</Text>
-        <Text style={styles.subtitle}>Please log in to view your profile.</Text>
-        {/* Potentially add a button to navigate to AuthScreen if you didn't reset navigation */}
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header tagline="Login to see your info" showLogo={false} />
+        <View style={styles.profileContent}>
+          <Text style={[styles.title, { color: colors.text }]}>Not Logged In</Text>
+          <Text style={[styles.subtitle, { color: colors.text }]}>Please log in to view your profile.</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Profile</Text>
-      <Text style={styles.username}>Username: {appUser.username}</Text>
-      <Text style={styles.uid}>User ID: {currentUser.uid}</Text>
-      {/* You can add more profile information here from appUser if you store it */}
-      <Button title="Logout" onPress={handleLogout} color="#dc3545" />
-    </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Header tagline="Manage your account" showLogo={false} />
+      <View style={styles.profileContent}>
+        <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
+        <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {currentUser.uid}</Text>
+
+        <View style={styles.themeToggleContainer}>
+          <Text style={[styles.themeToggleText, { color: colors.text }]}>Dark Mode</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: colors.primary }}
+            thumbColor={isDarkMode ? colors.card : '#f4f3f4'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={toggleTheme}
+            value={isDarkMode}
+          />
+        </View>
+
+        <Button title="Logout" onPress={handleLogout} color="#dc3545" />
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -62,25 +78,39 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  profileContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
   },
   username: {
     fontSize: 20,
     marginBottom: 10,
-    color: '#555',
   },
   uid: {
     fontSize: 14,
-    color: '#888',
     marginBottom: 30,
+  },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '80%',
+    maxWidth: 300,
+    marginBottom: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderRadius: 8,
+  },
+  themeToggleText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

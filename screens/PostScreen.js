@@ -1,3 +1,4 @@
+// screens/PostScreen.js
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -10,17 +11,20 @@ import {
   SafeAreaView,
   ActivityIndicator,
   ScrollView,
+  TextInput
 } from 'react-native';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Your Firestore instance
-import { useAuth } from '../context/AuthContext'; // <--- NEW: Import useAuth hook
+import { db } from '../firebaseConfig';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const PostScreen = ({ navigation }) => {
   const [thoughtText, setThoughtText] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const { currentUser, appUser } = useAuth(); // <--- NEW: Get currentUser and appUser from context
+  const { currentUser, appUser } = useAuth();
+  const { colors, isDarkMode } = useTheme();
 
   const handlePost = async () => {
     if (thoughtText.trim().length === 0) {
@@ -28,37 +32,30 @@ const PostScreen = ({ navigation }) => {
       return;
     }
 
-    // <--- NEW: Check if user is logged in before allowing post
     if (!currentUser || !appUser) {
       Alert.alert('Login Required', 'You must be logged in to share a thought.');
       return;
     }
-    // --->
 
     setIsPosting(true);
 
     try {
-      // You can keep randomEmoji if you want to add another layer of 'anonymous' ID
-      // even for logged-in users, or remove it if username is sufficient.
-      // For now, let's keep it.
       const animalEmojis = ['🐱', '🐶', '🐼', '🦊', '🐸', '🦁', '🐯', '🐨', '🐰', '🦄', '🐻', '🐭', '🦊', '🐮'];
       const randomEmoji = animalEmojis[Math.floor(Math.random() * animalEmojis.length)];
 
-      await addDoc(collection(db, 'posts'), { // <--- CHANGED: Writing to 'posts' collection
+      await addDoc(collection(db, 'posts'), {
         text: thoughtText,
         createdAt: serverTimestamp(),
-        // <--- NEW: Add user-specific data
-        userId: currentUser.uid,      // Firebase Authentication User ID
-        username: appUser.username,   // Your custom username
-        // --->
-        anonymousId: randomEmoji,     // Still include if desired for display
-        likes: 0, // Keep if you want to track likes
+        userId: currentUser.uid,
+        username: appUser.username,
+        anonymousId: randomEmoji,
+        likes: 0,
       });
 
       setThoughtText('');
       setIsPosting(false);
-      Alert.alert('Success', 'Your thought has been shared!'); // <--- Updated message
-      navigation.navigate('Home'); // Navigate to Home after successful post
+      Alert.alert('Success', 'Your thought has been shared!');
+      navigation.navigate('Home');
     } catch (error) {
       console.error('Error adding thought:', error);
       setIsPosting(false);
@@ -67,42 +64,43 @@ const PostScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Share a Thought" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Header tagline="Share what's on your mind" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
         <View style={styles.content}>
-          <Text style={styles.label}>What's on your mind?</Text>
-          {/* <--- UPDATED: Message reflects user-tied posts */}
-          <Text style={styles.subtitle}>Your thought will be shared under your username</Text>
-          {/* ---> */}
+          <Text style={[styles.label, { color: colors.text }]}>What's on your mind?</Text>
+          <Text style={[styles.subtitle, { color: colors.text }]}>Your thought will be shared under your username</Text>
 
-          <ScrollView style={styles.inputScrollView}>
+          <ScrollView style={[styles.inputScrollView, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <ThoughtInput
               value={thoughtText}
               onChangeText={setThoughtText}
               placeholder="Type your thoughts here..."
+              placeholderTextColor={colors.placeholder}
               maxLength={500}
+              style={{ color: colors.text }}
             />
           </ScrollView>
 
           <View style={styles.counterContainer}>
-            <Text style={styles.counter}>{thoughtText.length}/500</Text>
+            <Text style={[styles.counter, { color: colors.text }]}>{thoughtText.length}/500</Text>
           </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[
                 styles.postButton,
+                { backgroundColor: colors.primary },
                 (!thoughtText.trim() || isPosting) && styles.disabledButton
               ]}
               onPress={handlePost}
               disabled={!thoughtText.trim() || isPosting}
             >
               {isPosting ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={colors.card} />
               ) : (
                 <Text style={styles.postButtonText}>Share Thought</Text>
               )}
@@ -117,7 +115,6 @@ const PostScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
     padding: 20,
   },
   keyboardAvoid: {
@@ -130,7 +127,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 10,
     ...Platform.select({
       web: {
@@ -140,7 +136,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#777',
     marginBottom: 20,
     ...Platform.select({
       web: {
@@ -149,14 +144,11 @@ const styles = StyleSheet.create({
     }),
   },
   inputScrollView: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     padding: 15,
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
     marginBottom: 15,
     maxHeight: 200,
     ...Platform.select({
@@ -166,7 +158,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  input: { // This style is for ThoughtInput, ensure it's applied there.
+  input: {
     flexGrow: 1,
     textAlignVertical: 'top',
     padding: 0,
@@ -185,7 +177,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     fontSize: 12,
-    color: '#777',
     ...Platform.select({
       web: {
         fontSize: 20,
@@ -196,7 +187,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   postButton: {
-    backgroundColor: '#007bff',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',

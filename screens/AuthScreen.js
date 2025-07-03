@@ -1,77 +1,135 @@
 // screens/AuthScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { useAuth } from '../context/AuthContext'; // Adjust path as needed
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Alert
+} from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext'; //Import useTheme
 
 export default function AuthScreen() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSigningUp, setIsSigningUp] = useState(false); // To toggle between login/signup
+  const [username, setUsername] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signup, login } = useAuth();
+  const { login, register } = useAuth();
+  const { colors, isDarkMode } = useTheme(); //Get theme colors and isDarkMode
 
   const handleAuth = async () => {
-    if (!username || !password) {
-      Alert.alert('Error', 'Please enter both username and password.');
-      return;
-    }
-
     setLoading(true);
     try {
-      if (isSigningUp) {
-        await signup(username, password);
-        Alert.alert('Success', 'Account created! You are now logged in.');
+      if (isRegistering) {
+        if (!username.trim()) {
+          Alert.alert('Error', 'Please enter a username.');
+          setLoading(false);
+          return;
+        }
+        await register(email, password, username);
       } else {
-        await login(username, password);
-        Alert.alert('Success', 'Logged in successfully!');
+        await login(email, password);
       }
     } catch (error) {
-      console.error('Auth Error:', error);
-      // Firebase errors will have a 'code' property
-      let errorMessage = 'An unexpected error occurred.';
-      if (error.code === 'auth/email-already-in-use') { // This is for dummy email conflict
-        errorMessage = 'This username is taken or login failed. Try another or log in.';
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        errorMessage = 'Invalid username or password.';
-      } else if (error.message.includes('Username is already taken')) { // Custom error from signup
-        errorMessage = error.message;
-      }
-      Alert.alert('Authentication Failed', errorMessage);
+      console.error('Auth error:', error.message);
+      Alert.alert('Authentication Error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{isSigningUp ? 'Sign Up' : 'Login'}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button
-        title={loading ? 'Loading...' : (isSigningUp ? 'Sign Up' : 'Login')}
-        onPress={handleAuth}
-        disabled={loading}
-      />
-      <Button
-        title={isSigningUp ? 'Already have an account? Login' : 'Need an account? Sign Up'}
-        onPress={() => setIsSigningUp(!isSigningUp)}
-        disabled={loading}
-        color="gray"
-      />
-      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.spinner} />}
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: colors.background }]} // Apply background color
+    >
+      <View style={styles.form}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {isRegistering ? 'Register' : 'Login'}
+        </Text>
+
+        {isRegistering && (
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card, //Apply card background for input
+                color: colors.text,          // Apply text color for input
+                borderColor: colors.border   // Apply border color
+              }
+            ]}
+            placeholder="Username"
+            placeholderTextColor={colors.placeholder} // Apply placeholder color
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+        )}
+
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              color: colors.text,
+              borderColor: colors.border
+            }
+          ]}
+          placeholder="Email"
+          placeholderTextColor={colors.placeholder}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              color: colors.text,
+              borderColor: colors.border
+            }
+          ]}
+          placeholder="Password"
+          placeholderTextColor={colors.placeholder}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.primary }]} //Apply primary color
+          onPress={handleAuth}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.card} /> // Use card color for indicator
+          ) : (
+            <Text style={styles.buttonText}>
+              {isRegistering ? 'Register' : 'Login'}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.switchButton}
+          onPress={() => setIsRegistering((prev) => !prev)}
+          disabled={loading}
+        >
+          <Text style={[styles.switchButtonText, { color: colors.primary }]}>
+            {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -81,23 +139,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+  },
+  form: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    marginBottom: 20,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 30,
   },
   input: {
     width: '100%',
     padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
+    borderWidth: 1,
     marginBottom: 15,
-    backgroundColor: '#fff',
+    fontSize: 16,
   },
-  spinner: {
-    marginTop: 20,
-  }
+  button: {
+    width: '100%',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  switchButton: {
+    marginTop: 10,
+  },
+  switchButtonText: {
+    fontSize: 16,
+  },
 });
