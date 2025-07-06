@@ -5,12 +5,20 @@ import { useTheme } from '../context/ThemeContext';
 
 import AppLogo from '../assets/ventlogo.png';
 
-const Header = ({ showLogo = true, logoSource = AppLogo, tagline }) => {
+const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor, headerTextColor, taglineFontSize }) => {
   const { colors } = useTheme();
 
+  const currentHeaderBg = headerBgColor || colors.primary;
+  const currentHeaderTextColor = headerTextColor || colors.card;
+  const currentTaglineFontSize = taglineFontSize || 20;
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.primary }]}>
-      <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentHeaderBg }]}>
+      <View style={[
+        styles.headerContainer,
+        !showLogo && styles.headerContainerNoLogo,
+        { backgroundColor: currentHeaderBg }
+      ]}>
         {showLogo && logoSource && (
           <Image
             source={logoSource}
@@ -18,8 +26,11 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline }) => {
             resizeMode="contain"
           />
         )}
-        <View style={styles.textContainer}>
-          {tagline && <Text style={[styles.prominentTagline, { color: colors.card }]}>{tagline}</Text>}
+        <View style={[
+          styles.textContainer,
+          !showLogo && styles.textContainerNoLogo,
+        ]}>
+          {tagline && <Text style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
         </View>
       </View>
     </SafeAreaView>
@@ -42,6 +53,11 @@ const styles = StyleSheet.create({
     shadowRadius: 1.5,
     elevation: 3,
   },
+  headerContainerNoLogo: {
+    justifyContent: 'center',
+    paddingVertical: 15 + (Platform.OS === 'android' ? 20 : 0),
+    paddingHorizontal: 15,
+  },
   logo: {
     width: 40,
     height: 40,
@@ -50,8 +66,12 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
+  textContainerNoLogo: {
+    flex: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   prominentTagline: {
-    fontSize: 20,
     fontWeight: 'bold',
   },
 });

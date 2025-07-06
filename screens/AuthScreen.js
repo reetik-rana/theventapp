@@ -12,7 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext'; //Import useTheme
+import { useTheme } from '../context/ThemeContext';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -21,7 +21,7 @@ export default function AuthScreen() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
-  const { colors, isDarkMode } = useTheme(); //Get theme colors and isDarkMode
+  const { colors, isDarkMode } = useTheme();
 
   const handleAuth = async () => {
     setLoading(true);
@@ -47,7 +47,7 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.background }]} // Apply background color
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={styles.form}>
         <Text style={[styles.title, { color: colors.text }]}>
@@ -59,13 +59,13 @@ export default function AuthScreen() {
             style={[
               styles.input,
               {
-                backgroundColor: colors.card, //Apply card background for input
-                color: colors.text,          // Apply text color for input
-                borderColor: colors.border   // Apply border color
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderColor: colors.border
               }
             ]}
-            placeholder="Username"
-            placeholderTextColor={colors.placeholder} // Apply placeholder color
+            placeholder="Username" // This is the correct username input
+            placeholderTextColor={colors.placeholder}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -81,7 +81,7 @@ export default function AuthScreen() {
               borderColor: colors.border
             }
           ]}
-          placeholder="Email"
+          placeholder="Email" // MODIFIED: Changed placeholder from "username" to "Email"
           placeholderTextColor={colors.placeholder}
           value={email}
           onChangeText={setEmail}
@@ -106,12 +106,12 @@ export default function AuthScreen() {
         />
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]} //Apply primary color
+          style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={handleAuth}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={colors.card} /> // Use card color for indicator
+            <ActivityIndicator color={colors.card} />
           ) : (
             <Text style={styles.buttonText}>
               {isRegistering ? 'Register' : 'Login'}

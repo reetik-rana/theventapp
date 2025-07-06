@@ -1,24 +1,23 @@
 import React from 'react';
 import { StyleSheet, TextInput } from 'react-native';
-import { useTheme } from '../context/ThemeContext'; // NEW: Import useTheme
+import { useTheme } from '../context/ThemeContext';
 
 const ThoughtInput = ({ value, onChangeText, placeholder, maxLength }) => {
-  const { colors } = useTheme(); // NEW: Get colors from theme context
+  const { colors } = useTheme();
 
   return (
     <TextInput
       style={[
         styles.input,
         {
-          backgroundColor: colors.card, // Apply theme's card color
-          color: colors.text,         // Apply theme's text color
-          borderColor: colors.border  // Apply theme's border color
+          backgroundColor: colors.card,
+          color: colors.text,
         }
       ]}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={colors.placeholder} // Use theme's placeholder color
+      placeholderTextColor={colors.placeholder}
       multiline
       textAlignVertical="top"
       maxLength={maxLength}
@@ -34,7 +33,7 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     fontSize: 16,
     lineHeight: 24,
-    borderWidth: 1,
+    borderWidth: 0,
     textAlignVertical: 'top',
   },
 });

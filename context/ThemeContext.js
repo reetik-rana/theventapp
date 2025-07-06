@@ -44,7 +44,7 @@ export const ThemeProvider = ({children}) => {
   // Define your theme colors/styles here
   // These are example colors. You can adjust them to your preference.
   const colors = {
-    background: isDarkMode ? '#1a1a1a' : '#f5f5f5', // Main screen background
+    background: isDarkMode ? '#000000' : '#f5f5f5', // MODIFIED: Changed dark mode background to #000000 (pure black)
     text: isDarkMode ? '#e0e0e0' : '#333333',     // Primary text color
     card: isDarkMode ? '#2c2c2c' : '#ffffff',     // Card backgrounds (e.g., post items, input fields)
     primary: isDarkMode ? '#bb86fc' : '#6200ee',  // Primary accent color (buttons, active tabs)

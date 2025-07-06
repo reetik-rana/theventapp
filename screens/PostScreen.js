@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   ScrollView,
-  TextInput
+  // Removed TextInput as it's not directly used here
 } from 'react-native';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
@@ -65,12 +65,18 @@ const PostScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header tagline="Share what's on your mind" />
+      <Header
+        tagline="Share what's on your mind"
+        headerBgColor="black"
+        headerTextColor="white"
+        taglineFontSize={20}
+        showLogo={false}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: 20 }]}>
           <Text style={[styles.label, { color: colors.text }]}>What's on your mind?</Text>
           <Text style={[styles.subtitle, { color: colors.text }]}>Your thought will be shared under your username</Text>
 
@@ -81,7 +87,8 @@ const PostScreen = ({ navigation }) => {
               placeholder="Type your thoughts here..."
               placeholderTextColor={colors.placeholder}
               maxLength={500}
-              style={{ color: colors.text }}
+              // The `style` prop here is for the ScrollView, not directly for TextInput
+              // The TextInput styling is handled within ThoughtInput.js
             />
           </ScrollView>
 
@@ -115,7 +122,7 @@ const PostScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    // REMOVED: padding: 20, from here
   },
   keyboardAvoid: {
     flex: 1,
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingVertical: 20,
+    // ADDED: paddingHorizontal: 20, to ensure content below header is padded
   },
   label: {
     fontSize: 18,
@@ -146,9 +154,9 @@ const styles = StyleSheet.create({
   inputScrollView: {
     borderRadius: 8,
     borderWidth: 1,
-    padding: 15,
-    fontSize: 16,
-    lineHeight: 24,
+    // Removed padding here because ThoughtInput handles its own padding
+    fontSize: 16, // This applies to the ScrollView, not the TextInput inside
+    lineHeight: 24, // This applies to the ScrollView, not the TextInput inside
     marginBottom: 15,
     maxHeight: 200,
     ...Platform.select({
@@ -158,10 +166,14 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  // The `input` style within PostScreen.js is not applied to `ThoughtInput` directly
+  // ThoughtInput handles its own internal TextInput styling.
+  // This `input` style block can likely be removed or is vestigial.
+  // For now, I'll leave it as is if it's not causing issues, but it's worth noting.
   input: {
     flexGrow: 1,
     textAlignVertical: 'top',
-    padding: 0,
+    padding: 0, // ThoughtInput already has padding
     fontSize: 16,
     lineHeight: 24,
     ...Platform.select({

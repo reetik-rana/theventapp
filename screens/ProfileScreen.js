@@ -34,10 +34,17 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
+  // Header for not logged in state
   if (!appUser || !currentUser) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <Header tagline="Login to see your info" showLogo={false} />
+        <Header
+          tagline="Login to see your info"
+          headerBgColor="black"    // Set header background to black
+          headerTextColor="white"   // Set header text to white
+          taglineFontSize={16}      // Set tagline font size to smaller
+          showLogo={false}          // Hide the logo
+        />
         <View style={styles.profileContent}>
           <Text style={[styles.title, { color: colors.text }]}>Not Logged In</Text>
           <Text style={[styles.subtitle, { color: colors.text }]}>Please log in to view your profile.</Text>
@@ -46,9 +53,16 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
+  // Header for logged in state
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header tagline="Manage your account" showLogo={false} />
+      <Header
+        tagline="Manage your account"
+        headerBgColor="black"    // Set header background to black
+        headerTextColor="white"   // Set header text to white
+        taglineFontSize={20}      // Set tagline font size to smaller
+        showLogo={false}          // Hide the logo
+      />
       <View style={styles.profileContent}>
         <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
         <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {currentUser.uid}</Text>
@@ -89,6 +103,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  subtitle: { // Added subtitle style as it was present in the JSX but not in styles
+    fontSize: 16,
+    marginBottom: 10,
   },
   username: {
     fontSize: 20,

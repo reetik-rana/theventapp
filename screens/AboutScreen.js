@@ -47,7 +47,13 @@ const AboutScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header tagline="Our mission and values" />
+      <Header
+        tagline="Our mission and values"
+        headerBgColor="black" // Set header background to black
+        headerTextColor="white" // Set header text to white
+        taglineFontSize={20} // Set tagline font size to smaller
+        showLogo={false} // Hide the logo
+      />
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>The Vent</Text>
@@ -121,7 +127,7 @@ const AboutScreen = () => {
           </View>
 
           <Text style={[styles.footer, { color: colors.placeholder }]}>
-            Made with passion and a lot of help from AI. hehe {'\n'}
+            Developed by a Tech-Enthusiast {'\n'}
           </Text>
         </View>
       </ScrollView>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack'; // NEW: Import createStackNavigator
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from './screens/HomeScreen';
@@ -10,13 +11,16 @@ import PostScreen from './screens/PostScreen';
 import AboutScreen from './screens/AboutScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AuthScreen from './screens/AuthScreen';
-import SplashScreen from './screens/SplashScreen'; // NEW: Import SplashScreen
+import SplashScreen from './screens/SplashScreen';
+import PostDetailsScreen from './screens/PostDetailsScreen'; // NEW: Import PostDetailsScreen
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator(); // NEW: Initialize Stack Navigator
 
+// MainTabs component remains largely the same, defines your bottom tabs
 function MainTabs() {
   const { colors } = useTheme();
 
@@ -48,7 +52,7 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 12,
         },
-        headerShown: false,
+        headerShown: false, // Ensure headers are hidden for tab screens
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -58,6 +62,28 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
+
+// NEW: This component defines the main app navigation flow after authentication
+function AppNavigator() {
+  return (
+    <Stack.Navigator>
+      {/* The MainTabs (bottom tabs) are now a screen within the StackNavigator */}
+      <Stack.Screen
+        name="MainAppTabs" // A descriptive name for the screen containing your tabs
+        component={MainTabs}
+        options={{ headerShown: false }} // Hide header for the tabs themselves
+      />
+      {/* PostDetailsScreen is also a screen in the StackNavigator, accessible from any tab */}
+      <Stack.Screen
+        name="PostDetails"
+        component={PostDetailsScreen}
+        options={{ headerShown: false }} // Hide header for PostDetailsScreen
+      />
+      {/* Add any other stack-based screens here if needed later (e.g., specific settings screens) */}
+    </Stack.Navigator>
+  );
+}
+
 
 export default function App() {
   return (
@@ -73,17 +99,17 @@ function AppContent() {
   const { currentUser, loading } = useAuth();
   const { colors } = useTheme();
 
-  const [showSplash, setShowSplash] = useState(true); // NEW: State for splash screen
+  const [showSplash, setShowSplash] = useState(true);
 
-  useEffect(() => { // NEW: useEffect to hide splash screen after 2 seconds
+  useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000); // 2000 milliseconds = 2 seconds
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
-  if (showSplash) { // NEW: Render SplashScreen if showSplash is true
+  if (showSplash) {
     return <SplashScreen />;
   }
 
@@ -98,7 +124,8 @@ function AppContent() {
 
   return (
     <NavigationContainer>
-      {currentUser ? <MainTabs /> : <AuthScreen />}
+      {/* Conditionally render AppNavigator (which contains MainTabs and PostDetails) or AuthScreen */}
+      {currentUser ? <AppNavigator /> : <AuthScreen />}
     </NavigationContainer>
   );
 }
