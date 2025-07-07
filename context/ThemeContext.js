@@ -41,8 +41,6 @@ export const ThemeProvider = ({children}) => {
 
   const isDarkMode = theme === 'dark';
 
-  // Define your theme colors/styles here
-  // These are example colors. You can adjust them to your preference.
   const colors = {
     background: isDarkMode ? '#000000' : '#f5f5f5', // MODIFIED: Changed dark mode background to #000000 (pure black)
     text: isDarkMode ? '#e0e0e0' : '#333333',     // Primary text color

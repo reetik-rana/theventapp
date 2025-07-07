@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { CommonActions } from '@react-navigation/native';
+// REMOVED: import { CommonActions } from '@react-navigation/native'; // No longer needed in this file for logout
 import Header from '../components/Header';
 
 export default function ProfileScreen({ navigation }) {
@@ -13,12 +13,7 @@ export default function ProfileScreen({ navigation }) {
   const handleLogout = async () => {
     try {
       await logout();
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Auth' }],
-        })
-      );
+      // REMOVED: The entire navigation.dispatch block has been removed as App.js now handles this
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Failed to log out', 'Please try again.');
@@ -34,16 +29,15 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
-  // Header for not logged in state
   if (!appUser || !currentUser) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Header
           tagline="Login to see your info"
-          headerBgColor="black"    // Set header background to black
-          headerTextColor="white"   // Set header text to white
-          taglineFontSize={16}      // Set tagline font size to smaller
-          showLogo={false}          // Hide the logo
+          headerBgColor="black"
+          headerTextColor="white"
+          taglineFontSize={16}
+          showLogo={false}
         />
         <View style={styles.profileContent}>
           <Text style={[styles.title, { color: colors.text }]}>Not Logged In</Text>
@@ -53,15 +47,14 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
-  // Header for logged in state
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         tagline="Manage your account"
-        headerBgColor="black"    // Set header background to black
-        headerTextColor="white"   // Set header text to white
-        taglineFontSize={20}      // Set tagline font size to smaller
-        showLogo={false}          // Hide the logo
+        headerBgColor="black"
+        headerTextColor="white"
+        taglineFontSize={20}
+        showLogo={false}
       />
       <View style={styles.profileContent}>
         <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
@@ -104,7 +97,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  subtitle: { // Added subtitle style as it was present in the JSX but not in styles
+  subtitle: {
     fontSize: 16,
     marginBottom: 10,
   },
@@ -125,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     paddingVertical: 10,
     paddingHorizontal: 5,
-    borderRadius: 8,
+    borderRadius: 8
   },
   themeToggleText: {
     fontSize: 18,

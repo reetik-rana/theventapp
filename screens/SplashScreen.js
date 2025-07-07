@@ -8,14 +8,16 @@ const SplashScreen = () => {
   const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.primary }]}>
+    // Changed backgroundColor to 'black'
+    <SafeAreaView style={[styles.container, { backgroundColor: 'black' }]}>
       <View style={styles.content}>
         <Image
           source={AppLogo}
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={[styles.tagline, { color: colors.card }]}>We listen and We don't judge</Text>
+        {/* You might want to adjust the tagline color if it's not visible on black */}
+        <Text style={[styles.tagline, { color: 'white' }]}>We listen and We don't judge</Text>
       </View>
     </SafeAreaView>
   );

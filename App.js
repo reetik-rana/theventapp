@@ -1,9 +1,10 @@
 // App.js
+import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack'; // NEW: Import createStackNavigator
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from './screens/HomeScreen';
@@ -12,15 +13,18 @@ import AboutScreen from './screens/AboutScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AuthScreen from './screens/AuthScreen';
 import SplashScreen from './screens/SplashScreen';
-import PostDetailsScreen from './screens/PostDetailsScreen'; // NEW: Import PostDetailsScreen
+import PostDetailsScreen from './screens/PostDetailsScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator(); // NEW: Initialize Stack Navigator
+import { navigationRef } from './navigation/RootNavigation';
 
-// MainTabs component remains largely the same, defines your bottom tabs
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+const RootStack = createStackNavigator();
+
 function MainTabs() {
   const { colors } = useTheme();
 
@@ -52,7 +56,7 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 12,
         },
-        headerShown: false, // Ensure headers are hidden for tab screens
+        headerShown: false,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -63,27 +67,22 @@ function MainTabs() {
   );
 }
 
-// NEW: This component defines the main app navigation flow after authentication
 function AppNavigator() {
   return (
     <Stack.Navigator>
-      {/* The MainTabs (bottom tabs) are now a screen within the StackNavigator */}
       <Stack.Screen
-        name="MainAppTabs" // A descriptive name for the screen containing your tabs
+        name="MainAppTabs"
         component={MainTabs}
-        options={{ headerShown: false }} // Hide header for the tabs themselves
+        options={{ headerShown: false }}
       />
-      {/* PostDetailsScreen is also a screen in the StackNavigator, accessible from any tab */}
       <Stack.Screen
         name="PostDetails"
         component={PostDetailsScreen}
-        options={{ headerShown: false }} // Hide header for PostDetailsScreen
+        options={{ headerShown: false }}
       />
-      {/* Add any other stack-based screens here if needed later (e.g., specific settings screens) */}
     </Stack.Navigator>
   );
 }
-
 
 export default function App() {
   return (
@@ -109,6 +108,33 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
+  // MODIFIED: useEffect to handle navigation based on currentUser status
+  useEffect(() => {
+    // Only act if splash is done and not loading
+    if (!showSplash && !loading) {
+      if (navigationRef.current) {
+        if (currentUser) {
+          // User IS logged in: Navigate to the 'App' stack
+          navigationRef.current.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'App' }], // Navigate to the 'App' screen (which is AppNavigator)
+            })
+          );
+        } else {
+          // User IS NOT logged in: Navigate to the 'Auth' screen
+          navigationRef.current.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Auth' }], // Navigate to the 'Auth' screen
+            })
+          );
+        }
+      }
+    }
+  }, [currentUser, loading, showSplash]);
+
+
   if (showSplash) {
     return <SplashScreen />;
   }
@@ -122,10 +148,14 @@ function AppContent() {
     );
   }
 
+  // RETURN null here, as useEffect will handle the navigation
+  // The NavigationContainer with RootStack.Navigator handles the initial rendering based on state
   return (
-    <NavigationContainer>
-      {/* Conditionally render AppNavigator (which contains MainTabs and PostDetails) or AuthScreen */}
-      {currentUser ? <AppNavigator /> : <AuthScreen />}
+    <NavigationContainer ref={navigationRef}>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="Auth" component={AuthScreen} />
+        <RootStack.Screen name="App" component={AppNavigator} />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
