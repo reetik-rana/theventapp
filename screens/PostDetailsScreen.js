@@ -5,7 +5,6 @@ import {
   View,
   Text,
   SafeAreaView,
-  ActivityIndicator,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -14,49 +13,49 @@ import {
   Alert
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import Header from '../components/Header';
 import { db } from '../firebaseConfig';
 import {
   doc,
-  getDoc,
   collection,
   query,
   orderBy,
   onSnapshot,
-  addDoc, // To add a new reply document with auto ID
-  serverTimestamp, // For accurate timestamps
+  addDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext'; // To get currentUser and username/anonymousId
+import { useAuth } from '../context/AuthContext';
+import PostDetailsSkeleton from '../components/PostDetailsSkeleton';
 
 const PostDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { postId } = route.params; // Get postId from navigation params
 
+  const { postId } = route.params;
   const { colors } = useTheme();
-  const { currentUser, appUser } = useAuth(); // appUser might have username/anonymousId
+  const { currentUser, appUser } = useAuth();
 
   const [post, setPost] = useState(null);
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
-  const [isReplying, setIsReplying] = useState(false); // To prevent multiple reply submissions
+  const [isReplying, setIsReplying] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
+
     if (!postId) {
       console.error("No postId provided to PostDetailsScreen");
       setLoading(false);
       Alert.alert("Error", "Could not load post details.");
-      navigation.goBack(); // Go back if postId is missing
+      navigation.goBack();
       return;
     }
 
     const postDocRef = doc(db, 'posts', postId);
     const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
-    const qReplies = query(repliesCollectionRef, orderBy('createdAt', 'asc')); // Order replies by time
+    const qReplies = query(repliesCollectionRef, orderBy('createdAt', 'asc'));
 
-    // Listen for changes to the main post document
     const unsubscribePost = onSnapshot(postDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         setPost({ id: docSnapshot.id, ...docSnapshot.data() });
@@ -66,30 +65,30 @@ const PostDetailsScreen = () => {
         Alert.alert("Error", "The post you are trying to view does not exist.");
         navigation.goBack();
       }
-      setLoading(false); // Set loading false after initial post fetch
     }, (error) => {
       console.error("Error fetching post:", error);
       Alert.alert("Error", "Failed to load post details.");
-      setLoading(false);
+      setPost(null);
     });
 
-    // Listen for changes to the replies subcollection
     const unsubscribeReplies = onSnapshot(qReplies, (querySnapshot) => {
       const fetchedReplies = [];
       querySnapshot.forEach((doc) => {
         fetchedReplies.push({ id: doc.id, ...doc.data() });
       });
       setReplies(fetchedReplies);
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching replies:", error);
       Alert.alert("Error", "Failed to load replies.");
+      setLoading(false);
     });
 
     return () => {
       unsubscribePost();
       unsubscribeReplies();
     };
-  }, [postId, navigation]); // Depend on postId and navigation (for goBack)
+  }, [postId, navigation]);
 
   const handleAddReply = async () => {
     if (!currentUser || !appUser) {
@@ -100,7 +99,7 @@ const PostDetailsScreen = () => {
       Alert.alert('Empty Reply', 'Please type your reply.');
       return;
     }
-    if (isReplying) return; // Prevent multiple submissions
+    if (isReplying) return;
 
     setIsReplying(true);
 
@@ -108,11 +107,11 @@ const PostDetailsScreen = () => {
       const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
       await addDoc(repliesCollectionRef, {
         userId: currentUser.uid,
-        username: appUser.username || appUser.anonymousId || 'Anonymous', // Use username or anonymousId
+        username: appUser.username || appUser.anonymousId || 'Anonymous',
         text: replyText.trim(),
         createdAt: serverTimestamp(),
       });
-      setReplyText(''); // Clear input
+      setReplyText('');
     } catch (error) {
       console.error('Error adding reply:', error);
       Alert.alert('Error', 'Failed to add reply.');
@@ -135,36 +134,27 @@ const PostDetailsScreen = () => {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.text }}>Loading post...</Text>
-      </View>
-    );
-  }
-
-  if (!post) {
-    return (
-      <View style={[styles.noPostContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.noPostText, { color: colors.text }]}>Post not found.</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={{color: colors.primary}}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  if (loading || !post) {
+    return <PostDetailsSkeleton />;
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header
-        tagline="Post Details" // You can customize this
-        headerBgColor="black"
-        headerTextColor="white"
-        taglineFontSize={20}
-        showLogo={false}
-        centerTagline={true}
-      />
+      {/* NEW HEADER SECTION
+        We've replaced the old header with a custom view
+        to control the positioning of the back button and the title.
+      */}
+      <View style={[styles.customHeader, { backgroundColor: 'black' }]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Text style={[styles.backButtonIcon, { color: 'white' }]}>
+            &#x2190;
+          </Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: 'white' }]}>
+          Post Details
+        </Text>
+      </View>
+      {/* END NEW HEADER SECTION */}
 
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
@@ -191,7 +181,7 @@ const PostDetailsScreen = () => {
           contentContainerStyle={styles.repliesListContent}
         />
 
-        {currentUser && ( // Only show reply input if user is logged in
+        {currentUser && (
           <View style={[styles.replyInputContainer, { backgroundColor: colors.card }]}>
             <TextInput
               style={[styles.replyTextInput, { color: colors.text, borderColor: colors.border }]}
@@ -228,10 +218,31 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
+  // NEW STYLES for the custom header
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  // We've changed the positioning of the back button
+  backButton: {
+    position: 'absolute',
+    left: 5,
+    top: 30,
+    padding: 30,
+  },
+  backButtonIcon: {
+    fontSize: 30,
+  },
   postDetailItem: {
     borderRadius: 8,
     padding: 15,
-    margin: 15, // Margin around the main post
+    margin: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -258,10 +269,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
-    paddingHorizontal: 15, // Padding to align with post content
+    paddingHorizontal: 15,
   },
   repliesListContent: {
-    paddingBottom: 20, // Add padding at the bottom of the list
+    paddingBottom: 20,
   },
   replyItem: {
     borderRadius: 8,
@@ -294,8 +305,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     borderTopWidth: 1,
-    borderColor: '#ccc', // A default border for the input container
-    backgroundColor: '#fff', // A default background
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
   },
   replyTextInput: {
     flex: 1,
@@ -305,7 +316,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 10,
     minHeight: 40,
-    maxHeight: 100, // Limit height for multiline input
+    maxHeight: 100,
   },
   replyButton: {
     borderRadius: 20,
@@ -327,12 +338,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
   },
-  backButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderRadius: 5,
-    borderColor: 'gray', // Example color
-  }
 });
 
 export default PostDetailsScreen;

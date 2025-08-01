@@ -20,7 +20,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  getDocs, // Still used for getting snapshot for like/reply counts
+  getDocs,
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -34,41 +34,34 @@ const HomeScreen = () => {
   const navigation = useNavigation();
 
   const [postActivityStatus, setPostActivityStatus] = useState({});
-  // This state will now hold both like and reply counts, and isLiked status.
-  // Structure: { postId: { isLiked: boolean, likeCount: number, replyCount: number } }
-
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const fetchedPosts = [];
-      const newPostActivityStatus = {}; // Use a new object for updates
+      const newPostActivityStatus = {};
 
-      // Using Promise.all to fetch all like and reply counts concurrently
       const promises = querySnapshot.docs.map(async (docSnapshot) => {
         const postData = { id: docSnapshot.id, ...docSnapshot.data() };
         fetchedPosts.push(postData);
 
-        // Fetch likes subcollection
         const likesRef = collection(db, 'posts', postData.id, 'likes');
         const likesSnapshot = await getDocs(likesRef);
         const likeCount = likesSnapshot.size;
         const isLiked = currentUser ? likesSnapshot.docs.some(doc => doc.id === currentUser.uid) : false;
 
-        // NEW: Fetch replies subcollection
         const repliesRef = collection(db, 'posts', postData.id, 'replies');
         const repliesSnapshot = await getDocs(repliesRef);
-        const replyCount = repliesSnapshot.size; // Get the count of replies
+        const replyCount = repliesSnapshot.size;
 
-        newPostActivityStatus[postData.id] = { isLiked, likeCount, replyCount }; // Store all activity info
+        newPostActivityStatus[postData.id] = { isLiked, likeCount, replyCount };
       });
 
-      // Wait for all promises to resolve
       await Promise.all(promises);
 
       setPosts(fetchedPosts);
-      setPostActivityStatus(newPostActivityStatus); // Update the combined status
+      setPostActivityStatus(newPostActivityStatus);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching posts:', error);
@@ -77,7 +70,7 @@ const HomeScreen = () => {
     });
 
     return () => unsubscribe();
-  }, [currentUser]); // Re-run effect if currentUser changes, to update like status
+  }, [currentUser]);
 
   const handleLike = async (postId, postUserId) => {
     if (!currentUser) {
@@ -96,24 +89,42 @@ const HomeScreen = () => {
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
-          ...prevStatus[postId], // Keep existing replyCount
+          ...prevStatus[postId],
           isLiked: true,
           likeCount: (prevStatus[postId]?.likeCount || 0) + 1,
         }
       }));
 
+      // 1. Add the like document to the post subcollection
       await setDoc(likeDocRef, {
         timestamp: new Date(),
       });
 
+      // 2. NEW: Trigger the Cloud Function to send a push notification
+      // You must replace this with the actual URL of your deployed Cloud Function.
+      // This URL will be provided by Firebase after you deploy the function in Step 2.
+      const backendEndpoint = 'YOUR_CLOUD_FUNCTION_URL_HERE'; 
+
+      await fetch(backendEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipientId: postUserId,
+          message: 'Someone liked your post!',
+          postId: postId,
+        }),
+      });
+
     } catch (error) {
-      console.error('Error liking post:', error);
+      console.error('Error liking post or sending notification:', error);
       Alert.alert('Error', 'Failed to like post.');
       // Revert optimistic update on error
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
-          ...prevStatus[postId], // Keep existing replyCount
+          ...prevStatus[postId],
           isLiked: false,
           likeCount: (prevStatus[postId]?.likeCount || 0) - 1,
         }
@@ -134,7 +145,7 @@ const HomeScreen = () => {
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
-          ...prevStatus[postId], // Keep existing replyCount
+          ...prevStatus[postId],
           isLiked: false,
           likeCount: (prevStatus[postId]?.likeCount || 0) - 1,
         }
@@ -149,7 +160,7 @@ const HomeScreen = () => {
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
-          ...prevStatus[postId], // Keep existing replyCount
+          ...prevStatus[postId],
           isLiked: true,
           likeCount: (prevStatus[postId]?.likeCount || 0) + 1,
         }
@@ -167,13 +178,11 @@ const HomeScreen = () => {
   }
 
   const renderItem = ({ item }) => {
-    // Get all activity status from the combined state
     const activityStatus = postActivityStatus[item.id] || { isLiked: false, likeCount: 0, replyCount: 0 };
     const hasLiked = activityStatus.isLiked;
     const likeCount = activityStatus.likeCount;
-    const replyCount = activityStatus.replyCount; // NEW: Get replyCount
+    const replyCount = activityStatus.replyCount;
 
-    // Disable if not logged in, or if it's the user's own post
     const buttonDisabled = !currentUser || currentUser.uid === item.userId;
 
     return (
@@ -195,16 +204,15 @@ const HomeScreen = () => {
           )}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
-              // Use event bubbling prevention for the like button
               onPress={(event) => {
-                event.stopPropagation(); // Prevents onPress on parent TouchableOpacity
+                event.stopPropagation();
                 if (hasLiked) {
                   handleUnlike(item.id);
                 } else {
                   handleLike(item.id, item.userId);
                 }
               }}
-              style={styles.actionButton} // Reusing/Adjusting style
+              style={styles.actionButton}
               disabled={buttonDisabled}
             >
               <Text style={[styles.actionButtonText, { color: hasLiked ? 'red' : colors.text }]}>
@@ -214,11 +222,11 @@ const HomeScreen = () => {
 
             <TouchableOpacity
               onPress={(event) => {
-                event.stopPropagation(); // Prevents parent touch
+                event.stopPropagation();
                 navigation.navigate('PostDetails', { postId: item.id });
               }}
-              style={styles.actionButton} // Reusing/Adjusting style
-              disabled={false} // Reply count is always visible, but navigation might be restricted later
+              style={styles.actionButton}
+              disabled={false}
             >
               <Text style={[styles.actionButtonText, { color: colors.text }]}>
                 💬 {replyCount}
@@ -297,18 +305,17 @@ const styles = StyleSheet.create({
   postTimestamp: {
     fontSize: 12,
   },
-  actionButtonsContainer: { // NEW: Styles for the container of like and reply buttons
+  actionButtonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // Removed justifyContent: 'space-between' from here if you want them grouped
   },
-  actionButton: { // NEW: A more general style for action buttons (like, reply)
+  actionButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 5,
-    marginLeft: 10, // Space between like and reply
+    marginLeft: 10,
   },
-  actionButtonText: { // NEW: A more general style for action button text
+  actionButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
   },
