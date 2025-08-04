@@ -100,25 +100,8 @@ const HomeScreen = () => {
         timestamp: new Date(),
       });
 
-      // 2. NEW: Trigger the Cloud Function to send a push notification
-      // You must replace this with the actual URL of your deployed Cloud Function.
-      // This URL will be provided by Firebase after you deploy the function in Step 2.
-      const backendEndpoint = 'YOUR_CLOUD_FUNCTION_URL_HERE'; 
-
-      await fetch(backendEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          recipientId: postUserId,
-          message: 'Someone liked your post!',
-          postId: postId,
-        }),
-      });
-
     } catch (error) {
-      console.error('Error liking post or sending notification:', error);
+      console.error('Error liking post:', error);
       Alert.alert('Error', 'Failed to like post.');
       // Revert optimistic update on error
       setPostActivityStatus(prevStatus => ({

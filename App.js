@@ -1,13 +1,11 @@
 // App.js
 import 'react-native-gesture-handler';
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications'; // Import the new library
-import * as Device from 'expo-device';
 
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
@@ -19,47 +17,13 @@ import PostDetailsScreen from './screens/PostDetailsScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { db } from './firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
 
 import { navigationRef } from './navigation/RootNavigation';
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const RootStack = createStackNavigator();
-
-// This is the new function to handle all the notification logic
-async function registerForPushNotificationsAsync() {
-  let token;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      Alert.alert('Push Notifications', 'Failed to get push token for push notification! You can enable it in your device settings.');
-      return;
-    }
-
-    token = (await Notifications.getExpoPushTokenAsync()).data;
-  } else {
-    Alert.alert('Push Notifications', 'Must use a physical device for Push Notifications');
-  }
-
-  return token;
-}
 
 function MainTabs() {
   const { colors } = useTheme();
@@ -133,20 +97,8 @@ export default function App() {
 function AppContent() {
   const { currentUser, loading } = useAuth();
   const { colors } = useTheme();
-  const [showSplash, setShowSplash] = useState(true);
 
-  // New useEffect to handle push notifications
-  useEffect(() => {
-    if (currentUser) {
-      registerForPushNotificationsAsync().then(token => {
-        if (token) {
-          // Save the token to the user's Firestore document
-          const userRef = doc(db, 'users', currentUser.uid);
-          setDoc(userRef, { expoPushToken: token }, { merge: true });
-        }
-      });
-    }
-  }, [currentUser]); // This hook will run whenever the user logs in
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
