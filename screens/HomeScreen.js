@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Alert,
-  TouchableOpacity
+  TouchableOpacity,
+  Platform,
+  ScrollView
 } from 'react-native';
 import Header from '../components/Header';
 import { db } from '../firebaseConfig';
@@ -85,7 +87,6 @@ const HomeScreen = () => {
     const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
 
     try {
-      // Optimistic UI update
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
@@ -95,7 +96,6 @@ const HomeScreen = () => {
         }
       }));
 
-      // 1. Add the like document to the post subcollection
       await setDoc(likeDocRef, {
         timestamp: new Date(),
       });
@@ -103,7 +103,6 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error liking post:', error);
       Alert.alert('Error', 'Failed to like post.');
-      // Revert optimistic update on error
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
@@ -124,7 +123,6 @@ const HomeScreen = () => {
     const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
 
     try {
-      // Optimistic UI update
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
@@ -139,7 +137,6 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error unliking post:', error);
       Alert.alert('Error', 'Failed to unlike post.');
-      // Revert optimistic update on error
       setPostActivityStatus(prevStatus => ({
         ...prevStatus,
         [postId]: {
@@ -236,12 +233,25 @@ const HomeScreen = () => {
           <Text style={[styles.noPostsText, { color: colors.text }]}>No posts yet. Share your first thought!</Text>
         </View>
       ) : (
-        <FlatList
-          data={posts}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContentContainer}
-        />
+        // The main content container that now takes up all available space
+        <View style={styles.contentWrapper}>
+          {Platform.OS === 'web' ? (
+            <ScrollView contentContainerStyle={styles.listContentContainer}>
+              {posts.map((item) => (
+                <View key={item.id}>
+                  {renderItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <FlatList
+              data={posts}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContentContainer}
+            />
+          )}
+        </View>
       )}
     </SafeAreaView>
   );
@@ -253,23 +263,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // ADDED flex: 1 to make the container take up all available vertical space
   container: {
     flex: 1,
   },
-  listContentContainer: {
-    padding: 20,
-  },
-  postItem: {
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-    borderWidth: 1,
-  },
+  contentWrapper: Platform.select({
+    web: {
+      flex: 1,
+      alignSelf: 'center',
+      width: '100%',
+      maxWidth: 1000,
+    },
+    default: {
+      flex: 1,
+    },
+  }),
+  listContentContainer: Platform.select({
+    web: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-around',
+      padding: 20,
+    },
+    default: {
+      padding: 20,
+    },
+  }),
+  postItem: Platform.select({
+    web: {
+      borderRadius: 8,
+      padding: 15,
+      margin: 10,
+      width: 300,
+      height: 200,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+      borderWidth: 1,
+    },
+    default: {
+      borderRadius: 8,
+      padding: 15,
+      marginBottom: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+      borderWidth: 1,
+    },
+  }),
   postAuthor: {
     fontSize: 14,
     fontWeight: 'bold',

@@ -140,10 +140,6 @@ const PostDetailsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* NEW HEADER SECTION
-        We've replaced the old header with a custom view
-        to control the positioning of the back button and the title.
-      */}
       <View style={[styles.customHeader, { backgroundColor: 'black' }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={[styles.backButtonIcon, { color: 'white' }]}>
@@ -154,7 +150,6 @@ const PostDetailsScreen = () => {
           Post Details
         </Text>
       </View>
-      {/* END NEW HEADER SECTION */}
 
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
@@ -218,7 +213,7 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
-  // NEW STYLES for the custom header
+  // custom header
   customHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -229,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  // We've changed the positioning of the back button
+  // the positioning of the back button
   backButton: {
     position: 'absolute',
     left: 5,
@@ -303,7 +298,7 @@ const styles = StyleSheet.create({
   replyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    padding: 20,
     borderTopWidth: 1,
     borderColor: '#ccc',
     backgroundColor: '#fff',
@@ -313,7 +308,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    marginBottom: 15,
     marginRight: 10,
     minHeight: 40,
     maxHeight: 100,
@@ -322,6 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
+    marginBottom: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },

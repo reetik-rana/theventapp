@@ -42,7 +42,7 @@ export const ThoughtProvider = ({ children }) => {
     }
   }, [thoughts, isLoading]);
 
-  // Add a new thought
+  // Adding a new thought
   const addThought = (content, category) => {
     const newThought = {
       id: generateRandomId(),
@@ -67,7 +67,7 @@ export const ThoughtProvider = ({ children }) => {
     );
   };
 
-  // Add a comment to a thought
+  // Add a comment to a thought(reply)
   const addComment = (thoughtId, comment) => {
     setThoughts(prevThoughts =>
       prevThoughts.map(thought =>

@@ -49,10 +49,10 @@ const AboutScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         tagline="Our mission and values"
-        headerBgColor="black" // Set header background to black
-        headerTextColor="white" // Set header text to white
-        taglineFontSize={20} // Set tagline font size to smaller
-        showLogo={false} // Hide the logo
+        headerBgColor="black" //  header background - black
+        headerTextColor="white" // header text - white
+        taglineFontSize={20} //  tagline font size - smaller
+        showLogo={false} // Hide the logo(for)
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>

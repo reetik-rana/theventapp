@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({children}) => {
-  const [theme, setTheme] = useState('light'); // Default theme
+  const [theme, setTheme] = useState('light'); // Default theme will be light
 
   // Load theme from AsyncStorage on app start
   useEffect(() => {
@@ -42,7 +42,7 @@ export const ThemeProvider = ({children}) => {
   const isDarkMode = theme === 'dark';
 
   const colors = {
-    background: isDarkMode ? '#000000' : '#f5f5f5', // MODIFIED: Changed dark mode background to #000000 (pure black)
+    background: isDarkMode ? '#000000' : '#f5f5f5',
     text: isDarkMode ? '#e0e0e0' : '#333333',     // Primary text color
     card: isDarkMode ? '#2c2c2c' : '#ffffff',     // Card backgrounds (e.g., post items, input fields)
     primary: isDarkMode ? '#bb86fc' : '#6200ee',  // Primary accent color (buttons, active tabs)

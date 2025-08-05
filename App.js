@@ -1,7 +1,7 @@
 // App.js
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -48,11 +48,22 @@ function MainTabs() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.text,
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          paddingBottom: 10,
-          height: 70,
-        },
+        tabBarStyle: Platform.select({
+          web: {
+            // NEW: Styles for the web to limit the width
+            width: '100%',
+            maxWidth: 1000,
+            alignSelf: 'center',
+            backgroundColor: colors.card,
+            paddingBottom: 10,
+            height: 70,
+          },
+          default: {
+            backgroundColor: colors.card,
+            paddingBottom: 10,
+            height: 70,
+          },
+        }),
         tabBarLabelStyle: {
           fontSize: 12,
         },

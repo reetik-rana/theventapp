@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Make sure this path is correct
+import { db } from '../firebaseConfig'; // importing db firebase db
 
 const PostThoughtScreen = () => {
   const [thoughtText, setThoughtText] = useState('');
@@ -17,7 +17,7 @@ const PostThoughtScreen = () => {
     try {
       const docRef = await addDoc(collection(db, 'thoughts'), {
         text: thoughtText,
-        createdAt: serverTimestamp(), // Adds a timestamp from the server
+        createdAt: serverTimestamp(), // Adds a timestamp 
       });
       console.log('Thought posted with ID: ', docRef.id);
       setThoughtText(''); // Clear the input after successful post
@@ -42,7 +42,7 @@ const PostThoughtScreen = () => {
           value={thoughtText}
           onChangeText={setThoughtText}
           textAlignVertical="top"
-          maxLength={500} // You can adjust the max length
+          maxLength={500} // Length, can be adjusted if needed in future hehe
         />
       </ScrollView>
       <View style={styles.buttonContainer}>
@@ -81,14 +81,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginBottom: 20,
-    maxHeight: 300, // Optional: Add a maximum height if needed
+    maxHeight: 300,
   },
   input: {
     flexGrow: 1, // Allow the TextInput to grow within the ScrollView
     textAlignVertical: 'top',
   },
   buttonContainer: {
-    marginBottom: 20, // Add some space above the button
+    marginBottom: 20, // Add some space above the button, just to make it look better hehe
   },
 });
 

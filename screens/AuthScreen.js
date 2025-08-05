@@ -81,7 +81,7 @@ export default function AuthScreen() {
               borderColor: colors.border
             }
           ]}
-          placeholder="Email" // MODIFIED: Changed placeholder from "username" to "Email"
+          placeholder="Email"
           placeholderTextColor={colors.placeholder}
           value={email}
           onChangeText={setEmail}

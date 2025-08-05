@@ -13,7 +13,6 @@ export default function ProfileScreen({ navigation }) {
   const handleLogout = async () => {
     try {
       await logout();
-      // REMOVED: The entire navigation.dispatch block has been removed as App.js now handles this
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Failed to log out', 'Please try again.');

@@ -13,7 +13,7 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor,
   const currentTaglineFontSize = taglineFontSize || 20;
 
   return (
-    <SafeAreaView style={[{ backgroundColor: currentHeaderBg }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentHeaderBg }]}>
       <View style={[
         styles.headerContainer,
         !showLogo && styles.headerContainerNoLogo,
@@ -29,14 +29,9 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor,
         <View style={[
           styles.textContainer,
           !showLogo && styles.textContainerNoLogo,
+          centerTagline && styles.textContainerCentered,
         ]}>
-          {tagline && <Text style={[
-            styles.prominentTagline,
-            { color: currentHeaderTextColor, fontSize: currentTaglineFontSize },
-            centerTagline && styles.centeredTagline
-          ]}>
-            {tagline}
-          </Text>}
+          {tagline && <Text style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
         </View>
       </View>
     </SafeAreaView>
@@ -44,11 +39,14 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor,
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    paddingTop: Platform.OS === 'android' ? 20 : 0, // Adjust for Android status bar height
+    backgroundColor: 'transparent', // SafeAreaView background is transparent
+  },
   headerContainer: {
     width: '100%',
-    paddingTop: 40, // just in case if something's wrong with the HEADING, change this value hehe
-    paddingBottom: 15,
-    paddingHorizontal: 15,
+    padding: 15,
+    paddingTop: Platform.OS === 'android' ? 0 : 0, 
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -60,7 +58,8 @@ const styles = StyleSheet.create({
   },
   headerContainerNoLogo: {
     justifyContent: 'center',
-    paddingVertical: 15,
+    paddingVertical: 15 + (Platform.OS === 'android' ? 10 : 0), //the black bg of the heading
+    paddingHorizontal: 15,
   },
   logo: {
     width: 40,
@@ -75,12 +74,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textContainerCentered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   prominentTagline: {
     fontWeight: 'bold',
-  },
-  centeredTagline: {
     textAlign: 'center',
-  }
+    marginTop: 15,
+  },
 });
 
 export default Header;

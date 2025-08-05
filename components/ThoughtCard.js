@@ -36,7 +36,7 @@ const ThoughtCard = ({ thought, onPress }) => {
   };
 
   const handleCardPress = () => {
-    onPress(thought); // Call the onPress function passed from HomeScreen
+    onPress(thought); // onPress, when the post card is clicked
   };
 
   return (
