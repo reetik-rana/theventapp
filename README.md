@@ -1,7 +1,22 @@
-This is just a simple app that let's you post anonymous thoughts.
-I personally made it for the university students.
-There's this trend in my university where students like to do anonymous confessions using the ngl link.
-Now, as we've been told that it is totally safe to use the ngl link, I don't believe it. So I made this app.
-It is completely safe and easy to use.
-That's all I need to say.
-Do give your feedback!
+The Vent
+This is a simple, anonymous thought-sharing app built for a small community.
+
+-- Our Mission --
+The Vent provides a space for users to share their thoughts, feelings, and opinions openly and honestly, without the pressure of a public identity. Our goal is to foster a supportive environment where authenticity is encouraged.
+
+-- Key Features --
+Pseudo-Anonymous Posting: Share your thoughts using a custom username(don't include your real name) and an anonymous emoji. Other users cannot see your real name or personal information.
+
+Simple & Secure: A straightforward interface for posting and replying to thoughts. The app is built using modern technologies to ensure a smooth and secure experience.
+
+Like & Reply: Engage with posts by liking them or adding your own anonymous replies.
+
+-- Technical Details & Anonymity --
+User Authentication: The app uses Google authentication to create a user account, which is linked to a unique User ID (UID) in our backend database.
+
+Data Storage: When a post is created, it is associated with your unique User ID in the backend.
+
+Transparency: While your identity is kept private from other users, anyone with administrative access to the app's backend can view a post's User ID and link it to the corresponding user account. We do not use this information to track or identify individual users.
+
+[How to Contribute]
+If you're interested in contributing to the project, feel free to give your feedback and suggestions.
