@@ -4,44 +4,6 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 
-const comparisonData = [
-  {
-    feature: 'Primary User ID',
-    yourApp: 'Custom, chosen Username (e.g., "ShadowWhisper")',
-    others: 'User-chosen Username (e.g., "u/anonreader"), often linked to real identity on X',
-  },
-  {
-    feature: 'Real-World Identity',
-    yourApp: 'Not directly linked publicly (only internally by Firebase Auth UID if email/password used)',
-    others: 'Often linked to email/phone (Reddit) or directly encouraged/publicly displayed (X/Facebook)',
-  },
-  {
-    feature: 'Publicly Visible ID',
-    yourApp: 'Custom Username (e.g., "ShadowWhisper") or Emoji (e.g., "🐱")',
-    others: 'Username; sometimes real name/verified status (X)',
-  },
-  {
-    feature: 'Platform Knowledge',
-    yourApp: 'Firebase knows email/password/UID for authentication',
-    others: 'Platform knows email/phone, potentially real name, IP, and other personal data',
-  },
-  {
-    feature: 'Identity Traceability',
-    yourApp: 'Difficult for other users to trace; possible for platform/legal means via Firebase Auth UID/IP',
-    others: 'Easier for platform to trace; possible for others via public info, IP, or data breaches',
-  },
-  {
-    feature: 'Focus of Interaction',
-    yourApp: 'Primarily on the "thought" itself, pseudo-anonymous authors',
-    others: 'Often on the persona/identity behind the post, building followers/reputation',
-  },
-  {
-    feature: 'Data Collection',
-    yourApp: 'Minimal beyond what\'s needed for authentication and app function',
-    others: 'Extensive (location, contacts, Browse habits, linked accounts for ad targeting)',
-  },
-];
-
 const AboutScreen = () => {
   const { colors, isDarkMode } = useTheme();
 
@@ -49,10 +11,10 @@ const AboutScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         tagline="Our mission and values"
-        headerBgColor="black" //  header background - black
-        headerTextColor="white" // header text - white
-        taglineFontSize={20} //  tagline font size - smaller
-        showLogo={false} // Hide the logo(for)
+        headerBgColor="black"
+        headerTextColor="white"
+        taglineFontSize={20}
+        showLogo={false}
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
@@ -62,9 +24,9 @@ const AboutScreen = () => {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>What is The Vent?</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              The Vent is a safe space for anyone who want to share their thoughts, feelings,
-              and opinions without revealing their identity. Express yourself freely, rant about
-              anything, or share your deepest thoughts.
+              The Vent is a safe space for anyone who wants to share their thoughts, feelings,
+              and opinions without revealing their identity to the community. Express yourself freely,
+              rant about anything, or share your deepest thoughts.
             </Text>
           </View>
 
@@ -80,42 +42,16 @@ const AboutScreen = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy and Anonymity</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              Your identity is kept anonymous. We do not collect personal data that can identify you.
-              Only your username will be visible to others, which doesn't need to be your real name.
+              Your identity is pseudo-anonymous. This means that while your posts are anonymous to the general community and other users, they are linked to a unique User ID (UID) on our backend. The UID is generated when you sign up with your email. This UID is visible to the platform administrator, who has the ability to connect posts to an account. We do not use this information for tracking or other purposes.
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>The Vent v/s Others</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>A Note on Social Media</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              Our app offers a unique approach to thought sharing, prioritizing a form of anonymity that distinguishes it from traditional social media platforms like Reddit or X (Twitter).
-            </Text>
-
-            <View style={[styles.tableHeaderRow, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.tableHeaderText, styles.featureCol]}>Feature / Aspect</Text>
-              <Text style={[styles.tableHeaderText, styles.yourAppCol]}>Our App</Text>
-              <Text style={[styles.tableHeaderText, styles.othersCol]}>Other apps</Text>
-            </View>
-
-            {comparisonData.map((row, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.tableRow,
-                  { borderBottomColor: colors.border },
-                  index % 2 === 0 ? { backgroundColor: colors.card } : { backgroundColor: isDarkMode ? '#3c3c3c' : '#f0f8ff' },
-                ]}
-              >
-                <Text style={[styles.tableCell, styles.featureCol, styles.boldFeature, { color: colors.text }]}>{row.feature}</Text>
-                <Text style={[styles.tableCell, styles.yourAppCol, { color: colors.text }]}>{row.yourApp}</Text>
-                <Text style={[styles.tableCell, styles.othersCol, { color: colors.text }]}>{row.others}</Text>
-              </View>
-            ))}
-
-            <Text style={[styles.paragraph, { color: colors.text }]}>
-              While no online platform can guarantee absolute anonymity against sophisticated threats, our design emphasizes decoupling your posting identity from real-world identifiers, fostering a community focused purely on shared thoughts.
+              Unlike traditional social media where a user's reputation is tied to their profile, The Vent focuses on the content itself. This design choice is meant to promote open, honest conversation and reduce the social pressure that comes with posting publicly.
             </Text>
           </View>
 
@@ -174,43 +110,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     marginBottom: 20,
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    overflow: 'hidden',
-    marginTop: 15,
-  },
-  tableHeaderText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 11,
-    paddingHorizontal: 4,
-    textAlign: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-  },
-  tableCell: {
-    fontSize: 10,
-    paddingHorizontal: 4,
-    lineHeight: 14,
-  },
-  boldFeature: {
-    fontWeight: 'bold',
-  },
-  featureCol: {
-    width: '25%',
-  },
-  yourAppCol: {
-    width: '37.5%',
-  },
-  othersCol: {
-    width: '37.5%',
   },
 });
 
