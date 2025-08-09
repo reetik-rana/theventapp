@@ -175,6 +175,7 @@ const PostDetailsScreen = () => {
                   {new Date(post.createdAt.toDate()).toLocaleString()}
                 </Text>
               )}
+              {/* This text was previously not in a Text component */}
               <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
             </View>
           )}
@@ -227,12 +228,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    // position: 'relative',
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 30,
-    borderBottomWidth: 0,
+    paddingVertical: 30, //to shift the vertical padding of header
+    borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
   headerTitle: {
@@ -240,11 +240,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   backButtonHeader: {
+    marginTop: 10,
     position: 'absolute',
-    left: 15,
-    padding: 20,
-    // paddingVertical: 10,
-    zIndex: 10,
+    left: 15, //to shift the horizontal position of back button
   },
   postDetailItem: {
     borderRadius: 8,
@@ -346,11 +344,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
-    padding: 10,
+    padding: 20,
     borderWidth: 1,
     borderRadius: 5,
     borderColor: 'gray',
-  }
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  tagContainer: {
+    marginLeft: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
 export default PostDetailsScreen;

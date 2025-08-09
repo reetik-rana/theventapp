@@ -171,9 +171,16 @@ const HomeScreen = () => {
         onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
         activeOpacity={0.7}
       >
-        <Text style={[styles.postAuthor, { color: colors.primary }]}>
-          {item.username} {item.anonymousId}
-        </Text>
+        <View style={styles.postHeader}>
+          <Text style={[styles.postAuthor, { color: colors.primary }]}>
+            {item.username} {item.anonymousId}
+          </Text>
+          {item.tag && (
+            <View style={[styles.tagContainer, { borderColor: colors.primary }]}>
+              <Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
+            </View>
+          )}
+        </View>
         <Text style={[styles.postText, { color: colors.text }]}>{item.text}</Text>
 
         <View style={styles.postFooter}>
@@ -233,7 +240,6 @@ const HomeScreen = () => {
           <Text style={[styles.noPostsText, { color: colors.text }]}>No posts yet. Share your first thought!</Text>
         </View>
       ) : (
-        // The main content container that now takes up all available space
         <View style={styles.contentWrapper}>
           {Platform.OS === 'web' ? (
             <ScrollView contentContainerStyle={styles.listContentContainer}>
@@ -263,7 +269,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // ADDED flex: 1 to make the container take up all available vertical space
   container: {
     flex: 1,
   },
@@ -315,10 +320,25 @@ const styles = StyleSheet.create({
       borderWidth: 1,
     },
   }),
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  tagContainer: {
+    marginLeft: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   postAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
   postText: {
     fontSize: 16,

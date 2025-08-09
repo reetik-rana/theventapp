@@ -4,12 +4,12 @@
     "slug": "thevent",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/ventlogo.png",
+    "icon": "./assets/logoorange.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "scheme": "thevent",
     "splash": {
-      "image": "./assets/ventlogo.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/ventlogo.png",
+        "foregroundImage": "./assets/logoorange.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.bawayaga.thevent",
