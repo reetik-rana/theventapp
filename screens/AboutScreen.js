@@ -19,7 +19,7 @@ const AboutScreen = () => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>The Vent</Text>
-          <Text style={[styles.version, { color: colors.placeholder }]}>Version 1.2.1</Text>
+          <Text style={[styles.version, { color: colors.placeholder }]}>Version 1.2.2</Text>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>What is The Vent?</Text>
