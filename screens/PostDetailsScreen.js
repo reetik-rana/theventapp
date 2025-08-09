@@ -5,6 +5,7 @@ import {
   View,
   Text,
   SafeAreaView,
+  ActivityIndicator,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -25,15 +26,17 @@ import {
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import PostDetailsSkeleton from '../components/PostDetailsSkeleton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 const PostDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-
   const { postId } = route.params;
+
   const { colors } = useTheme();
   const { currentUser, appUser } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [post, setPost] = useState(null);
   const [replies, setReplies] = useState([]);
@@ -42,8 +45,6 @@ const PostDetailsScreen = () => {
   const [isReplying, setIsReplying] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-
     if (!postId) {
       console.error("No postId provided to PostDetailsScreen");
       setLoading(false);
@@ -65,10 +66,11 @@ const PostDetailsScreen = () => {
         Alert.alert("Error", "The post you are trying to view does not exist.");
         navigation.goBack();
       }
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching post:", error);
       Alert.alert("Error", "Failed to load post details.");
-      setPost(null);
+      setLoading(false);
     });
 
     const unsubscribeReplies = onSnapshot(qReplies, (querySnapshot) => {
@@ -77,11 +79,9 @@ const PostDetailsScreen = () => {
         fetchedReplies.push({ id: doc.id, ...doc.data() });
       });
       setReplies(fetchedReplies);
-      setLoading(false);
     }, (error) => {
       console.error("Error fetching replies:", error);
       Alert.alert("Error", "Failed to load replies.");
-      setLoading(false);
     });
 
     return () => {
@@ -134,27 +134,35 @@ const PostDetailsScreen = () => {
     </View>
   );
 
-  if (loading || !post) {
-    return <PostDetailsSkeleton />;
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text }}>Loading post...</Text>
+      </View>
+    );
+  }
+
+  if (!post) {
+    return (
+      <View style={[styles.noPostContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.noPostText, { color: colors.text }]}>Post not found.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={{color: colors.primary}}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.customHeader, { backgroundColor: 'black' }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButtonIcon, { color: 'white' }]}>
-            &#x2190;
-          </Text>
+      <View style={[styles.header, { backgroundColor: 'black' }]}>
+        <Text style={[styles.headerTitle, { color: 'white' }]}>Post Details</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonHeader}>
+            <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: 'white' }]}>
-          Post Details
-        </Text>
       </View>
-
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.contentContainer}>
         <FlatList
           ListHeaderComponent={() => (
             <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -177,26 +185,31 @@ const PostDetailsScreen = () => {
         />
 
         {currentUser && (
-          <View style={[styles.replyInputContainer, { backgroundColor: colors.card }]}>
-            <TextInput
-              style={[styles.replyTextInput, { color: colors.text, borderColor: colors.border }]}
-              placeholder="Write a reply..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              value={replyText}
-              onChangeText={setReplyText}
-              editable={!isReplying}
-            />
-            <TouchableOpacity
-              style={[styles.replyButton, { backgroundColor: colors.primary }]}
-              onPress={handleAddReply}
-              disabled={isReplying || !replyText.trim()}
-            >
-              <Text style={styles.replyButtonText}>{isReplying ? 'Replying...' : 'Reply'}</Text>
-            </TouchableOpacity>
-          </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
+          >
+            <View style={[styles.replyInputContainer, { backgroundColor: colors.card, paddingBottom: 10 + insets.bottom }]}>
+              <TextInput
+                style={[styles.replyTextInput, { color: colors.text, borderColor: colors.border }]}
+                placeholder="Write a reply..."
+                placeholderTextColor={colors.placeholder}
+                multiline
+                value={replyText}
+                onChangeText={setReplyText}
+                editable={!isReplying}
+              />
+              <TouchableOpacity
+                style={[styles.replyButton, { backgroundColor: colors.primary }]}
+                onPress={handleAddReply}
+                disabled={isReplying || !replyText.trim()}
+              >
+                <Text style={styles.replyButtonText}>{isReplying ? 'Replying...' : 'Reply'}</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -210,29 +223,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardAvoidingView: {
+  contentContainer: {
     flex: 1,
   },
-  // custom header
-  customHeader: {
+  header: {
+    // position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 30,
+    borderBottomWidth: 0,
+    borderBottomColor: '#333',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
   },
-  // the positioning of the back button
-  backButton: {
+  backButtonHeader: {
     position: 'absolute',
-    left: 5,
-    top: 30,
-    padding: 30,
-  },
-  backButtonIcon: {
-    fontSize: 30,
+    left: 15,
+    padding: 20,
+    // paddingVertical: 10,
+    zIndex: 10,
   },
   postDetailItem: {
     borderRadius: 8,
@@ -298,7 +310,7 @@ const styles = StyleSheet.create({
   replyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
     borderTopWidth: 1,
     borderColor: '#ccc',
     backgroundColor: '#fff',
@@ -308,8 +320,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
+    paddingVertical: 8,
     marginRight: 10,
     minHeight: 40,
     maxHeight: 100,
@@ -318,7 +329,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
-    marginBottom: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -335,6 +345,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
   },
+  backButton: {
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: 'gray',
+  }
 });
 
 export default PostDetailsScreen;

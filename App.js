@@ -6,6 +6,7 @@ import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
@@ -27,6 +28,7 @@ const RootStack = createStackNavigator();
 
 function MainTabs() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -50,7 +52,6 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.text,
         tabBarStyle: Platform.select({
           web: {
-            // NEW: Styles for the web to limit the width
             width: '100%',
             maxWidth: 1000,
             alignSelf: 'center',
@@ -60,8 +61,8 @@ function MainTabs() {
           },
           default: {
             backgroundColor: colors.card,
-            paddingBottom: 10,
-            height: 70,
+            paddingBottom: 5 + insets.bottom,
+            height: 50 + insets.bottom,
           },
         }),
         tabBarLabelStyle: {
