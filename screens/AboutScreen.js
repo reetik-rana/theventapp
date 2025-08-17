@@ -56,11 +56,27 @@ const AboutScreen = () => {
           </View>
 
           <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>A Note on Email Authentication</Text>
+            <Text style={[styles.paragraph, { color: colors.text }]}>
+              The Vent uses email authentication to ensure that each user has a unique account. This helps maintain the integrity of the community and prevents spam. 
+              Your email is used solely for account verification and recovery purposes like when a user forgets their username or password. You can simply mail at capsprout2001@proton.me and the admin will help you recover your account.
+              <Text style={{ fontWeight: 'bold' }}> Please note that we do not sell your data.</Text>
+            </Text>
+            <Text style={[styles.paragraph, { color: colors.text }]}>
+              Your email is not used for any other purpose, and we do not send promotional emails or newsletters. 
+              The Vent is committed to protecting your privacy and ensuring that your personal information remains confidential 
+              <Text style={{ fontWeight: 'bold' }}> If you still think that you won't ever forget your username or password, what you can do to be completely anonymous is use a fake/temporary email for signup/login.</Text>
+            </Text>
+          </View>
+
+          <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
               For suggestions, issues, or feedback --- @capsprout2001@proton.me.
             </Text>
           </View>
+
+          
 
           <Text style={[styles.footer, { color: colors.placeholder }]}>
             Developed by a Tech-Enthusiast {'\n'}
