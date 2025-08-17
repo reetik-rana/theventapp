@@ -23,11 +23,56 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
+  getDocs,
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+// This recursive function fetches all replies and their nested replies
+const fetchRepliesRecursively = async (collectionRef) => {
+  const q = query(collectionRef, orderBy('createdAt', 'asc'));
+  const querySnapshot = await getDocs(q);
+  const replies = [];
+
+  for (const docSnapshot of querySnapshot.docs) {
+    const replyData = { id: docSnapshot.id, ...docSnapshot.data() };
+    const nestedRepliesRef = collection(docSnapshot.ref, 'replies');
+    replyData.replies = await fetchRepliesRecursively(nestedRepliesRef);
+    replies.push(replyData);
+  }
+
+  return replies;
+};
+
+const ReplyItem = ({ item, level, postId, onReplyPress }) => {
+  const { colors } = useTheme();
+  const marginLeft = level * 20;
+
+  return (
+    <View style={[styles.replyItemContainer, { marginLeft: marginLeft, borderLeftColor: colors.border }]}>
+      <View style={[styles.replyItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.replyAuthor, { color: colors.primary }]}>
+          {item.username}
+        </Text>
+        <Text style={[styles.replyText, { color: colors.text }]}>{item.text}</Text>
+        {item.createdAt && (
+          <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
+            {new Date(item.createdAt.toDate()).toLocaleString()}
+          </Text>
+        )}
+        <TouchableOpacity onPress={() => onReplyPress(item)} style={styles.nestedReplyButton}>
+            <Text style={[styles.nestedReplyButtonText, { color: colors.secondary }]}>Reply</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Recursively render nested replies */}
+      {item.replies && item.replies.map(reply => (
+        <ReplyItem key={reply.id} item={reply} level={level + 1} postId={postId} onReplyPress={onReplyPress} />
+      ))}
+    </View>
+  );
+};
 
 const PostDetailsScreen = () => {
   const route = useRoute();
@@ -43,6 +88,7 @@ const PostDetailsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
+  const [parentReply, setParentReply] = useState(null);
 
   useEffect(() => {
     if (!postId) {
@@ -54,9 +100,8 @@ const PostDetailsScreen = () => {
     }
 
     const postDocRef = doc(db, 'posts', postId);
-    const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
-    const qReplies = query(repliesCollectionRef, orderBy('createdAt', 'asc'));
-
+    
+    // Create an onSnapshot listener for the post data
     const unsubscribePost = onSnapshot(postDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         setPost({ id: docSnapshot.id, ...docSnapshot.data() });
@@ -73,15 +118,16 @@ const PostDetailsScreen = () => {
       setLoading(false);
     });
 
-    const unsubscribeReplies = onSnapshot(qReplies, (querySnapshot) => {
-      const fetchedReplies = [];
-      querySnapshot.forEach((doc) => {
-        fetchedReplies.push({ id: doc.id, ...doc.data() });
-      });
-      setReplies(fetchedReplies);
-    }, (error) => {
-      console.error("Error fetching replies:", error);
-      Alert.alert("Error", "Failed to load replies.");
+    // Create a new listener to fetch replies recursively
+    const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
+    const unsubscribeReplies = onSnapshot(repliesCollectionRef, async () => {
+      try {
+        const fetchedReplies = await fetchRepliesRecursively(repliesCollectionRef);
+        setReplies(fetchedReplies);
+      } catch (error) {
+        console.error("Error fetching replies:", error);
+        Alert.alert("Error", "Failed to load replies.");
+      }
     });
 
     return () => {
@@ -104,7 +150,11 @@ const PostDetailsScreen = () => {
     setIsReplying(true);
 
     try {
-      const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
+      // Logic to add a nested reply to a comment or a top-level reply to a post
+      const repliesCollectionRef = parentReply
+        ? collection(db, 'posts', postId, 'replies', parentReply.id, 'replies')
+        : collection(db, 'posts', postId, 'replies');
+
       await addDoc(repliesCollectionRef, {
         userId: currentUser.uid,
         username: appUser.username || appUser.anonymousId || 'Anonymous',
@@ -112,6 +162,7 @@ const PostDetailsScreen = () => {
         createdAt: serverTimestamp(),
       });
       setReplyText('');
+      setParentReply(null); // Clear parent reply
     } catch (error) {
       console.error('Error adding reply:', error);
       Alert.alert('Error', 'Failed to add reply.');
@@ -120,19 +171,14 @@ const PostDetailsScreen = () => {
     }
   };
 
-  const renderReplyItem = ({ item }) => (
-    <View style={[styles.replyItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.replyAuthor, { color: colors.primary }]}>
-        {item.username}
-      </Text>
-      <Text style={[styles.replyText, { color: colors.text }]}>{item.text}</Text>
-      {item.createdAt && (
-        <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
-          {new Date(item.createdAt.toDate()).toLocaleString()}
-        </Text>
-      )}
-    </View>
-  );
+  const handleReplyPress = (reply) => {
+    setParentReply(reply);
+    // You can also focus the text input here
+  };
+
+  const renderReplyItem = ({ item }) => {
+    return <ReplyItem item={item} level={0} postId={postId} onReplyPress={handleReplyPress} />;
+  };
 
   if (loading) {
     return (
@@ -146,7 +192,7 @@ const PostDetailsScreen = () => {
   if (!post) {
     return (
       <View style={[styles.noPostContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.noPostText, { color: colors.text }]}>Post not found.</Text>
+        <Text style={[styles.noPostsText, { color: colors.text }]}>Post not found.</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={{color: colors.primary}}>Go Back</Text>
         </TouchableOpacity>
@@ -208,7 +254,7 @@ const PostDetailsScreen = () => {
                 borderColor: colors.border,
                 backgroundColor: colors.background
               }]}
-              placeholder="Write a reply..."
+              placeholder={parentReply ? `Replying to ${parentReply.username}` : "Write a reply..."}
               placeholderTextColor={colors.placeholder}
               multiline
               value={replyText}
@@ -216,6 +262,11 @@ const PostDetailsScreen = () => {
               editable={!isReplying}
               textAlignVertical="top"
             />
+            {parentReply && (
+              <TouchableOpacity onPress={() => setParentReply(null)} style={styles.cancelReplyButton}>
+                <Ionicons name="close-circle" size={24} color={colors.text} />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={[
                 styles.replyButton, 
@@ -312,11 +363,16 @@ const styles = StyleSheet.create({
   repliesListContent: {
     paddingBottom: 20,
   },
+  replyItemContainer: {
+    paddingVertical: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#E0E0E0',
+    paddingLeft: 10,
+    marginBottom: 8,
+  },
   replyItem: {
     borderRadius: 8,
     padding: 10,
-    marginHorizontal: 15,
-    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -373,7 +429,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  noPostText: {
+  noPostsText: {
     fontSize: 18,
     marginBottom: 20,
   },
@@ -398,6 +454,20 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  nestedReplyButton: {
+    alignSelf: 'flex-start',
+    marginTop: 5,
+  },
+  nestedReplyButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cancelReplyButton: {
+    position: 'absolute',
+    top: -10,
+    right: 15,
+    zIndex: 1,
   },
 });
 
