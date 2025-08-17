@@ -162,8 +162,18 @@ const PostDetailsScreen = () => {
             <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
       </View>
-      <View style={styles.contentContainer}>
+
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.select({ 
+          ios: 90,
+          android: 20 
+        })}
+        enabled={true}
+      >
         <FlatList
+          style={styles.flatListStyle}
           ListHeaderComponent={() => (
             <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>
@@ -175,7 +185,6 @@ const PostDetailsScreen = () => {
                   {new Date(post.createdAt.toDate()).toLocaleString()}
                 </Text>
               )}
-              {/* This text was previously not in a Text component */}
               <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
             </View>
           )}
@@ -183,34 +192,50 @@ const PostDetailsScreen = () => {
           renderItem={renderReplyItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.repliesListContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         />
 
         {currentUser && (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
-          >
-            <View style={[styles.replyInputContainer, { backgroundColor: colors.card, paddingBottom: 10 + insets.bottom }]}>
-              <TextInput
-                style={[styles.replyTextInput, { color: colors.text, borderColor: colors.border }]}
-                placeholder="Write a reply..."
-                placeholderTextColor={colors.placeholder}
-                multiline
-                value={replyText}
-                onChangeText={setReplyText}
-                editable={!isReplying}
-              />
-              <TouchableOpacity
-                style={[styles.replyButton, { backgroundColor: colors.primary }]}
-                onPress={handleAddReply}
-                disabled={isReplying || !replyText.trim()}
-              >
-                <Text style={styles.replyButtonText}>{isReplying ? 'Replying...' : 'Reply'}</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
+          <View style={[styles.replyInputContainer, { 
+            backgroundColor: colors.card, 
+            borderTopColor: colors.border,
+            paddingBottom: insets.bottom || 10
+          }]}>
+            <TextInput
+              style={[styles.replyTextInput, { 
+                color: colors.text, 
+                borderColor: colors.border,
+                backgroundColor: colors.background
+              }]}
+              placeholder="Write a reply..."
+              placeholderTextColor={colors.placeholder}
+              multiline
+              value={replyText}
+              onChangeText={setReplyText}
+              editable={!isReplying}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[
+                styles.replyButton, 
+                { 
+                  backgroundColor: replyText.trim() && !isReplying ? colors.primary : colors.border 
+                }
+              ]}
+              onPress={handleAddReply}
+              disabled={isReplying || !replyText.trim()}
+            >
+              <Text style={[
+                styles.replyButtonText,
+                { color: replyText.trim() && !isReplying ? 'white' : colors.placeholder }
+              ]}>
+                {isReplying ? 'Replying...' : 'Reply'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -224,25 +249,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  flatListStyle: {
     flex: 1,
   },
   header: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 30, //to shift the vertical padding of header
-    borderBottomWidth: 1,
+    paddingVertical: 25,
+    paddingHorizontal: 15,
+    borderBottomWidth: 0,
     borderBottomColor: '#333',
+    position: 'relative',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
   },
   backButtonHeader: {
-    marginTop: 10,
     position: 'absolute',
-    left: 15, //to shift the horizontal position of back button
+    left: 30,
+    top: 28,
+    zIndex: 1,
   },
   postDetailItem: {
     borderRadius: 8,
@@ -307,21 +340,21 @@ const styles = StyleSheet.create({
   },
   replyInputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
+    alignItems: 'flex-end',
+    padding: 15,
     borderTopWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
+    gap: 10,
+    position: 'relative',
   },
   replyTextInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 10,
+    paddingVertical: 10,
     minHeight: 40,
     maxHeight: 100,
+    textAlignVertical: 'top',
   },
   replyButton: {
     borderRadius: 20,
@@ -329,10 +362,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     justifyContent: 'center',
     alignItems: 'center',
+    minWidth: 70,
   },
   replyButtonText: {
-    color: 'white',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   noPostContainer: {
     flex: 1,
@@ -344,7 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
-    padding: 20,
+    padding: 10,
     borderWidth: 1,
     borderRadius: 5,
     borderColor: 'gray',
