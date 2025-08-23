@@ -163,6 +163,20 @@ const PostDetailsScreen = () => {
       });
       setReplyText('');
       setParentReply(null); // Clear parent reply
+      
+      // NEW: Add a notification to the original post author
+      if (post && post.userId !== currentUser.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: post.userId,
+          type: 'reply',
+          postId: postId,
+          postText: post.text.substring(0, 50) + '...', // Truncate for notification
+          senderUsername: appUser.username || 'Anonymous',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+      
     } catch (error) {
       console.error('Error adding reply:', error);
       Alert.alert('Error', 'Failed to add reply.');

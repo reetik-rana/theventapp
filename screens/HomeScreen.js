@@ -10,7 +10,8 @@ import {
   Alert,
   TouchableOpacity,
   Platform,
-  ScrollView
+  ScrollView,
+  Modal,
 } from 'react-native';
 import Header from '../components/Header';
 import { db } from '../firebaseConfig';
@@ -27,6 +28,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { categories } from '../utils/helpers';
+import { Ionicons } from '@expo/vector-icons';
 
 const HomeScreen = () => {
   const [posts, setPosts] = useState([]);
@@ -36,6 +39,8 @@ const HomeScreen = () => {
   const navigation = useNavigation();
 
   const [postActivityStatus, setPostActivityStatus] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
@@ -148,15 +153,6 @@ const HomeScreen = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.text }}>Loading posts...</Text>
-      </View>
-    );
-  }
-
   const renderItem = ({ item }) => {
     const activityStatus = postActivityStatus[item.id] || { isLiked: false, likeCount: 0, replyCount: 0 };
     const hasLiked = activityStatus.isLiked;
@@ -164,6 +160,11 @@ const HomeScreen = () => {
     const replyCount = activityStatus.replyCount;
 
     const buttonDisabled = !currentUser || currentUser.uid === item.userId;
+
+    // Filter logic to conditionally render items
+    if (selectedCategory !== 'All' && item.tag !== selectedCategory) {
+      return null;
+    }
 
     return (
       <TouchableOpacity
@@ -225,6 +226,15 @@ const HomeScreen = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text }}>Loading posts...</Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
@@ -235,6 +245,19 @@ const HomeScreen = () => {
         showLogo={false}
         centerTagline={true}
       />
+      <View style={[styles.filterContainer, { borderColor: colors.border }]}>
+        <Text style={[styles.filterLabel, { color: colors.text }]}>Filter by:</Text>
+        <TouchableOpacity
+          style={[styles.filterButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+          onPress={() => setShowCategoryModal(true)}
+        >
+          <Text style={[styles.filterButtonText, { color: colors.text }]}>
+            {selectedCategory}
+          </Text>
+          <Ionicons name="caret-down" size={16} color={colors.text} style={styles.dropdownIcon} />
+        </TouchableOpacity>
+      </View>
+
       {posts.length === 0 ? (
         <View style={styles.noPostsContainer}>
           <Text style={[styles.noPostsText, { color: colors.text }]}>No posts yet. Share your first thought!</Text>
@@ -259,6 +282,48 @@ const HomeScreen = () => {
           )}
         </View>
       )}
+
+      {/* Category Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCategoryModal}
+        onRequestClose={() => {
+          setShowCategoryModal(!showCategoryModal);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select a Category</Text>
+            <FlatList
+              data={['All', ...categories]}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    { borderBottomColor: colors.border }
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory(item);
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }]}>
+                    {item}
+                  </Text>
+                  {selectedCategory === item && (
+                    <Ionicons name="checkmark" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity onPress={() => setShowCategoryModal(false)} style={styles.modalCloseButton}>
+              <Text style={[styles.modalCloseButtonText, { color: colors.primary }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -294,6 +359,67 @@ const styles = StyleSheet.create({
       padding: 20,
     },
   }),
+  filterContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  filterLabel: {
+    fontSize: 16,
+    marginRight: 10,
+    fontWeight: 'bold',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    marginRight: 5,
+  },
+  dropdownIcon: {
+    marginLeft: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    maxHeight: '60%',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalItem: {
+    paddingVertical: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  modalItemText: {
+    fontSize: 16,
+  },
+  modalCloseButton: {
+    marginTop: 20,
+    padding: 10,
+    alignItems: 'center',
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   postItem: Platform.select({
     web: {
       borderRadius: 8,

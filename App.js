@@ -15,6 +15,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import AuthScreen from './screens/AuthScreen';
 import SplashScreen from './screens/SplashScreen';
 import PostDetailsScreen from './screens/PostDetailsScreen';
+import NotificationScreen from './screens/NotificationScreen'; // NEW: Import the new screen
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -90,6 +91,11 @@ function AppNavigator() {
       <Stack.Screen
         name="PostDetails"
         component={PostDetailsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen // NEW: Add the notification screen to the stack
+        name="Notifications"
+        component={NotificationScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
