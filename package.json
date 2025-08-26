@@ -17,7 +17,7 @@
     "@react-navigation/bottom-tabs": "^7.2.1",
     "@react-navigation/native": "^7.0.15",
     "@react-navigation/stack": "^7.4.2",
-    "expo": "^53.0.20",
+    "expo": "53.0.22",
     "expo-device": "~7.1.4",
     "expo-notifications": "~0.31.4",
     "expo-server-sdk": "^3.15.0",
@@ -33,7 +33,8 @@
     "react-native-reanimated": "^3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-web": "^0.20.0"
+    "react-native-web": "^0.20.0",
+    "expo-updates": "~0.28.17"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0"

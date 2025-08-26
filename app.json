@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bawayaga.thevent"
+      "bundleIdentifier": "com.bawayaga.thevent",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +36,12 @@
         "projectId": "60ebc278-cb73-4b21-9a01-23ae89ea58e1"
       }
     },
-    "owner": "bawayaga"
+    "owner": "bawayaga",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/60ebc278-cb73-4b21-9a01-23ae89ea58e1"
+    }
   }
 }

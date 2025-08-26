@@ -1,12 +1,13 @@
 // App.js
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates'; // NEW: Import Expo Updates
 
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
@@ -15,7 +16,8 @@ import ProfileScreen from './screens/ProfileScreen';
 import AuthScreen from './screens/AuthScreen';
 import SplashScreen from './screens/SplashScreen';
 import PostDetailsScreen from './screens/PostDetailsScreen';
-import NotificationScreen from './screens/NotificationScreen'; // NEW: Import the new screen
+import NotificationScreen from './screens/NotificationScreen';
+import UserPostsScreen from './screens/UserPostsScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -93,9 +95,14 @@ function AppNavigator() {
         component={PostDetailsScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen // NEW: Add the notification screen to the stack
+      <Stack.Screen
         name="Notifications"
         component={NotificationScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="UserPosts"
+        component={UserPostsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -118,7 +125,39 @@ function AppContent() {
 
   const [showSplash, setShowSplash] = useState(true);
 
+  // NEW: Function to check for and apply updates
+  async function checkForUpdates() {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        Alert.alert(
+          'Update Available',
+          'A new version of the app is available. Restart to update?',
+          [
+            {
+              text: 'Later',
+              style: 'cancel',
+            },
+            {
+              text: 'Update',
+              onPress: async () => {
+                await Updates.fetchUpdateAsync();
+                await Updates.reloadAsync();
+              },
+            },
+          ]
+        );
+      }
+    } catch (e) {
+      // You can handle this error, e.g., by logging it
+      console.log('Error fetching updates', e);
+    }
+  }
+
   useEffect(() => {
+    // Check for updates as soon as the app loads
+    checkForUpdates();
+
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);

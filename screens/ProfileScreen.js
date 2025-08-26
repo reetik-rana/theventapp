@@ -18,7 +18,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Listen for unread notifications in real-time
     const q = query(
       collection(db, 'notifications'),
       where('recipientId', '==', currentUser.uid),
@@ -98,6 +97,16 @@ export default function ProfileScreen() {
           )}
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('UserPosts')}
+        >
+          <Ionicons name="document-text" size={24} color={colors.text} />
+          <Text style={[styles.myPostsButtonText, { color: colors.text }]}>
+            My Posts
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.themeToggleContainer}>
           <Text style={[styles.themeToggleText, { color: colors.text }]}>Dark Mode</Text>
           <Switch
@@ -174,6 +183,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   notificationsButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  myPostsButton: { // NEW: Style for the My Posts button
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    maxWidth: 300,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  myPostsButtonText: { // NEW: Style for the My Posts button text
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
