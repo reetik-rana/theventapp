@@ -21,6 +21,7 @@ import {
   onSnapshot,
   doc,
   getDocs,
+  deleteDoc,
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -42,7 +43,6 @@ const UserPostsScreen = () => {
       return;
     }
 
-    // Query for posts by the current user's UID
     const q = query(
       collection(db, 'posts'),
       where('userId', '==', currentUser.uid),
@@ -83,9 +83,32 @@ const UserPostsScreen = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
+  const handleDeletePost = (postId) => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'posts', postId));
+              Alert.alert('Success', 'Post deleted successfully!');
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleLike = async (postId, postUserId) => {
-    // This logic is already implemented in HomeScreen, but we need it here for consistency
-    // as users can like posts from this screen as well.
     if (!currentUser) {
       Alert.alert('Login Required', 'You must be logged in to like a thought.');
       return;
@@ -166,62 +189,67 @@ const UserPostsScreen = () => {
     const buttonDisabled = !currentUser || currentUser.uid === item.userId;
 
     return (
-      <TouchableOpacity
-        style={[styles.postItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
-        activeOpacity={0.7}
-      >
-        <View style={styles.postHeader}>
-          <Text style={[styles.postAuthor, { color: colors.primary }]}>
-            {item.username} {item.anonymousId}
-          </Text>
-          {item.tag && (
-            <View style={[styles.tagContainer, { borderColor: colors.primary }]}>
-              <Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
-            </View>
-          )}
-        </View>
-        <Text style={[styles.postText, { color: colors.text }]}>{item.text}</Text>
-
-        <View style={styles.postFooter}>
-          {item.createdAt && (
-            <Text style={[styles.postTimestamp, { color: colors.placeholder }]}>
-              {new Date(item.createdAt.toDate()).toLocaleString()}
+      <View style={[styles.postItemWrapper, { borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.postItem, { backgroundColor: colors.card }]}
+          onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
+          activeOpacity={0.7}
+        >
+          <View style={styles.postHeader}>
+            <Text style={[styles.postAuthor, { color: colors.primary }]}>
+              {item.username} {item.anonymousId}
             </Text>
-          )}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              onPress={(event) => {
-                event.stopPropagation();
-                if (hasLiked) {
-                  handleUnlike(item.id);
-                } else {
-                  handleLike(item.id, item.userId);
-                }
-              }}
-              style={styles.actionButton}
-              disabled={buttonDisabled}
-            >
-              <Text style={[styles.actionButtonText, { color: hasLiked ? 'red' : colors.text }]}>
-                ❤️ {likeCount}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={(event) => {
-                event.stopPropagation();
-                navigation.navigate('PostDetails', { postId: item.id });
-              }}
-              style={styles.actionButton}
-              disabled={false}
-            >
-              <Text style={[styles.actionButtonText, { color: colors.text }]}>
-                💬 {replyCount}
-              </Text>
-            </TouchableOpacity>
+            {item.tag && (
+              <View style={[styles.tagContainer, { borderColor: colors.primary }]}>
+                <Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
+              </View>
+            )}
           </View>
-        </View>
-      </TouchableOpacity>
+          <Text style={[styles.postText, { color: colors.text }]}>{item.text}</Text>
+
+          <View style={styles.postFooter}>
+            {item.createdAt && (
+              <Text style={[styles.postTimestamp, { color: colors.placeholder }]}>
+                {new Date(item.createdAt.toDate()).toLocaleString()}
+              </Text>
+            )}
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                onPress={(event) => {
+                  event.stopPropagation();
+                  if (hasLiked) {
+                    handleUnlike(item.id);
+                  } else {
+                    handleLike(item.id, item.userId);
+                  }
+                }}
+                style={styles.actionButton}
+                disabled={buttonDisabled}
+              >
+                <Text style={[styles.actionButtonText, { color: hasLiked ? 'red' : colors.text }]}>
+                  ❤️ {likeCount}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={(event) => {
+                  event.stopPropagation();
+                  navigation.navigate('PostDetails', { postId: item.id });
+                }}
+                style={styles.actionButton}
+                disabled={false}
+              >
+                <Text style={[styles.actionButtonText, { color: colors.text }]}>
+                  💬 {replyCount}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeletePost(item.id)}>
+          <Ionicons name="trash-outline" size={24} color="#dc3545" />
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -255,6 +283,7 @@ const UserPostsScreen = () => {
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContentContainer}
+            numColumns={Platform.OS === 'web' ? 3 : 1}
           />
         </View>
       )}
@@ -271,54 +300,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentWrapper: Platform.select({
-    web: {
-      flex: 1,
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 1000,
-    },
-    default: {
-      flex: 1,
-    },
-  }),
-  listContentContainer: Platform.select({
-    web: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-around',
-      padding: 20,
-    },
-    default: {
-      padding: 20,
-    },
-  }),
-  postItem: Platform.select({
-    web: {
-      borderRadius: 8,
-      padding: 15,
-      margin: 10,
-      width: 300,
-      height: 200,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 1.41,
-      elevation: 2,
-      borderWidth: 1,
-    },
-    default: {
-      borderRadius: 8,
-      padding: 15,
-      marginBottom: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 1.41,
-      elevation: 2,
-      borderWidth: 1,
-    },
-  }),
+  contentWrapper: {
+    flex: 1,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1000,
+  },
+  listContentContainer: {
+    padding: 20,
+  },
+  postItemWrapper: {
+    position: 'relative',
+    margin: 10,
+    width: 300,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  postItem: {
+    padding: 15,
+    backgroundColor: 'white',
+    width: '100%',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+    padding: 5,
+  },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
