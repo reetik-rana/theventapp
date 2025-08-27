@@ -1,6 +1,7 @@
+
 // screens/ProfileScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
@@ -14,6 +15,12 @@ export default function ProfileScreen() {
   const { theme, toggleTheme, colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const handleUpdateApp = () => {
+    Linking.openURL('https://github.com/reetik-rana/theventapp/releases').catch((err) => {
+      Alert.alert('Error', 'Could not open the update page.');
+    });
+  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -118,6 +125,16 @@ export default function ProfileScreen() {
           />
         </View>
 
+
+      <TouchableOpacity
+        style={[styles.updateAppButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={handleUpdateApp}
+      >
+        <Ionicons name="cloud-download" size={24} color={colors.text} />
+        <Text style={[styles.updateAppButtonText, { color: colors.text }]}>Update App</Text>
+      </TouchableOpacity>
+      <Text style={[styles.updateAppInstruction, { color: colors.placeholder }]}>To update, tap the button above, then scroll down and click the .apk file under "Assets" to download and install the latest version.</Text>
+
         <Button title="Logout" onPress={handleLogout} color="#dc3545" />
       </View>
     </SafeAreaView>
@@ -202,6 +219,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
+  },
+  updateAppButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    maxWidth: 300,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  updateAppButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  updateAppInstruction: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    marginHorizontal: 20,
   },
   badge: {
     position: 'absolute',

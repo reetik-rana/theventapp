@@ -1,86 +1,89 @@
 // screens/AboutScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Linking, Image } from 'react-native';
 import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 
+const APP_VERSION = '1.2.3';
+const ADMIN_EMAIL = 'capsprout2001@proton.me';
+const GITHUB_URL = 'https://github.com/reetik-rana/theventapp';
+
 const AboutScreen = () => {
-  const { colors, isDarkMode } = useTheme();
+  const { colors } = useTheme();
+
+  const handleContactPress = () => {
+    Linking.openURL(`mailto:${ADMIN_EMAIL}`);
+  };
+
+  const handleGithubPress = () => {
+    Linking.openURL(GITHUB_URL);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
-        tagline="Our mission and values"
+        tagline="About The Vent"
         headerBgColor="black"
         headerTextColor="white"
         taglineFontSize={20}
         showLogo={false}
       />
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.content}>
+          <Image source={require('../assets/ventlogo.png')} style={styles.logo} />
           <Text style={[styles.title, { color: colors.text }]}>The Vent</Text>
-          <Text style={[styles.version, { color: colors.placeholder }]}>Version 1.2.3</Text>
+          <Text style={[styles.version, { color: colors.placeholder }]}>Version {APP_VERSION}</Text>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>What is The Vent?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Welcome</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              The Vent is a safe space for anyone who wants to share their thoughts, feelings,
-              and opinions without revealing their identity to the community. Express yourself freely,
-              rant about anything, or share your deepest thoughts.
+              The Vent is a safe, anonymous space to share your thoughts, feelings, and opinions. Express yourself freely and connect with others—without the pressure of revealing your identity.
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Our Mission</Text>
+            <Text style={[styles.paragraph, { color: colors.text }]}>
+              We believe everyone deserves a place to be heard. Our mission is to foster a supportive, respectful, and open community where you can vent, reflect, and find solidarity.
             </Text>
           </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Community Guidelines</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              • Be respectful of others{'\n'}
-              • No hate speech or bullying{'\n'}
-              • No sharing of personal information{'\n'}
-              • No spamming or inappropriate content{'\n'}
-              • Violations may result in content/account removal
+              • Be respectful and kind{'\n'}
+              • No hate speech, bullying, or harassment{'\n'}
+              • Do not share personal information{'\n'}
+              • No spam or inappropriate content{'\n'}
+              • Violations may result in removal of content or account
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy and Anonymity</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy & Anonymity</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              Your identity is pseudo-anonymous. This means that while your posts are anonymous to the general community and other users, they are linked to a unique User ID (UID) on our backend. The UID is generated when you sign up with your email. This UID is visible to the platform administrator, who has the ability to connect posts to an account. We do not use this information for tracking or other purposes.
+              Your posts are anonymous to the community, but are linked to a unique User ID (UID) for moderation and account recovery. Only the platform admin can access this information, and it is never sold or used for advertising.
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>A Note on Social Media</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Email Authentication</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              Unlike traditional social media where a user's reputation is tied to their profile, The Vent focuses on the content itself. This design choice is meant to promote open, honest conversation and reduce the social pressure that comes with posting publicly.
+              We use email authentication to ensure each user has a unique account and to prevent spam. Your email is only used for account verification and recovery. We do not send promotional emails or newsletters, and your data is never sold.
+            </Text>
+            <Text style={[styles.paragraph, { color: colors.text }]}>
+              Forgot your username or password? Email <Text style={{ fontWeight: 'bold', color: colors.primary }} onPress={handleContactPress}>{ADMIN_EMAIL}</Text> for help. For maximum anonymity, you may use a temporary or fake email for signup/login.
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>A Note on Email Authentication</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact & Feedback</Text>
             <Text style={[styles.paragraph, { color: colors.text }]}>
-              The Vent uses email authentication to ensure that each user has a unique account. This helps maintain the integrity of the community and prevents spam. 
-              Your email is used solely for account verification and recovery purposes like when a user forgets their username or password. You can simply mail at capsprout2001@proton.me and the admin will help you recover your account.
-              <Text style={{ fontWeight: 'bold' }}> Please note that we do not sell your data.</Text>
-            </Text>
-            <Text style={[styles.paragraph, { color: colors.text }]}>
-              Your email is not used for any other purpose, and we do not send promotional emails or newsletters. 
-              The Vent is committed to protecting your privacy and ensuring that your personal information remains confidential 
-              <Text style={{ fontWeight: 'bold' }}> If you still think that you won't ever forget your username or password, what you can do to be completely anonymous is use a fake/temporary email for signup/login.</Text>
+              Have suggestions/want to contribute or need support? Reach out at <Text style={{ fontWeight: 'bold', color: colors.primary }} onPress={handleContactPress}>{ADMIN_EMAIL}</Text>.
             </Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact</Text>
-            <Text style={[styles.paragraph, { color: colors.text }]}>
-              For suggestions, issues, or feedback --- @capsprout2001@proton.me.
-            </Text>
-          </View>
-
-          
-
-          <Text style={[styles.footer, { color: colors.placeholder }]}>
-            Developed by a Tech-Enthusiast {'\n'}
-          </Text>
+          <Text style={[styles.footer, { color: colors.placeholder }]}>Made with ❤️ by a Tech Enthusiast</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -97,16 +100,26 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  logo: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginBottom: 12,
+    borderRadius: 16,
+    resizeMode: 'contain',
+  },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
+    letterSpacing: 1,
   },
   version: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    color: '#888',
   },
   section: {
     marginBottom: 20,
