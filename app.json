@@ -8,17 +8,9 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "scheme": "thevent",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bawayaga.thevent",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "bundleIdentifier": "com.bawayaga.thevent"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,12 +28,6 @@
         "projectId": "60ebc278-cb73-4b21-9a01-23ae89ea58e1"
       }
     },
-    "owner": "bawayaga",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/60ebc278-cb73-4b21-9a01-23ae89ea58e1"
-    }
+    "owner": "bawayaga"
   }
 }

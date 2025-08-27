@@ -12,6 +12,8 @@ import {
   Platform,
   ScrollView,
   Modal,
+  Dimensions,
+  TextInput,
 } from 'react-native';
 import Header from '../components/Header';
 import { db } from '../firebaseConfig';
@@ -31,6 +33,22 @@ import { useNavigation } from '@react-navigation/native';
 import { categories } from '../utils/helpers';
 import { Ionicons } from '@expo/vector-icons';
 
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const numColumns = isWeb ? 3 : 2;
+
+// Recursively count all replies and their nested replies
+const countRepliesRecursively = async (repliesRef) => {
+  let count = 0;
+  const snapshot = await getDocs(repliesRef);
+  count += snapshot.size;
+  for (const docSnap of snapshot.docs) {
+    const nestedRepliesRef = collection(docSnap.ref, 'replies');
+    count += await countRepliesRecursively(nestedRepliesRef);
+  }
+  return count;
+};
+
 const HomeScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +59,7 @@ const HomeScreen = () => {
   const [postActivityStatus, setPostActivityStatus] = useState({});
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
@@ -58,9 +77,9 @@ const HomeScreen = () => {
         const likeCount = likesSnapshot.size;
         const isLiked = currentUser ? likesSnapshot.docs.some(doc => doc.id === currentUser.uid) : false;
 
+        // Use recursive count for replies
         const repliesRef = collection(db, 'posts', postData.id, 'replies');
-        const repliesSnapshot = await getDocs(repliesRef);
-        const replyCount = repliesSnapshot.size;
+        const replyCount = await countRepliesRecursively(repliesRef);
 
         newPostActivityStatus[postData.id] = { isLiked, likeCount, replyCount };
       });
@@ -161,8 +180,15 @@ const HomeScreen = () => {
 
     const buttonDisabled = !currentUser || currentUser.uid === item.userId;
 
-    // Filter logic to conditionally render items
     if (selectedCategory !== 'All' && item.tag !== selectedCategory) {
+      return null;
+    }
+    
+    // Search logic to conditionally render items
+    const searchTextLower = searchText.toLowerCase();
+    const postTextLower = item.text.toLowerCase();
+    const postAuthorLower = item.username.toLowerCase(); // NEW: Get username in lowercase
+    if (searchText && !postTextLower.includes(searchTextLower) && !postAuthorLower.includes(searchTextLower)) { // NEW: Check against username
       return null;
     }
 
@@ -235,6 +261,12 @@ const HomeScreen = () => {
     );
   }
 
+  const filteredPosts = posts.filter(post => selectedCategory === 'All' || post.tag === selectedCategory);
+  const searchedPosts = filteredPosts.filter(post =>
+    post.text.toLowerCase().includes(searchText.toLowerCase()) ||
+    post.username.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
@@ -257,29 +289,29 @@ const HomeScreen = () => {
           <Ionicons name="caret-down" size={16} color={colors.text} style={styles.dropdownIcon} />
         </TouchableOpacity>
       </View>
+      <View style={[styles.searchContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Ionicons name="search" size={20} color={colors.placeholder} style={styles.searchIcon} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search thoughts or username..."
+          placeholderTextColor={colors.placeholder}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
 
-      {posts.length === 0 ? (
+      {searchedPosts.length === 0 ? (
         <View style={styles.noPostsContainer}>
-          <Text style={[styles.noPostsText, { color: colors.text }]}>No posts yet. Share your first thought!</Text>
+          <Text style={[styles.noPostsText, { color: colors.text }]}>No posts found.</Text>
         </View>
       ) : (
         <View style={styles.contentWrapper}>
-          {Platform.OS === 'web' ? (
-            <ScrollView contentContainerStyle={styles.listContentContainer}>
-              {posts.map((item) => (
-                <View key={item.id}>
-                  {renderItem({ item })}
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
             <FlatList
-              data={posts}
+              data={searchedPosts}
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.listContentContainer}
             />
-          )}
         </View>
       )}
 
@@ -337,28 +369,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentWrapper: Platform.select({
-    web: {
-      flex: 1,
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 1000,
-    },
-    default: {
-      flex: 1,
-    },
-  }),
-  listContentContainer: Platform.select({
-    web: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-around',
-      padding: 20,
-    },
-    default: {
-      padding: 20,
-    },
-  }),
+  contentWrapper: {
+    flex: 1,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1000,
+  },
+  listContentContainer: {
+    padding: 20,
+  },
   filterContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -383,6 +402,22 @@ const styles = StyleSheet.create({
   },
   dropdownIcon: {
     marginLeft: 5,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    margin: 20,
+    paddingHorizontal: 10,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 10,
   },
   modalOverlay: {
     flex: 1,

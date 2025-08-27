@@ -40,12 +40,12 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor,
 
 const styles = StyleSheet.create({
   safeArea: {
-    paddingTop: Platform.OS === 'android' ? 20 : 0, // Adjust for Android status bar height
-    backgroundColor: 'transparent', // SafeAreaView background is transparent
+    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    backgroundColor: 'transparent',
   },
   headerContainer: {
     width: '100%',
-    padding: 15,
+    padding: 10, // Decreased from 15 to 10
     paddingTop: Platform.OS === 'android' ? 0 : 0, 
     flexDirection: 'row',
     alignItems: 'center',
@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
   },
   headerContainerNoLogo: {
     justifyContent: 'center',
-    paddingVertical: 15 + (Platform.OS === 'android' ? 10 : 0), //the black bg of the heading
-    paddingHorizontal: 15,
+    paddingVertical: 10 + (Platform.OS === 'android' ? 10 : 0), // Adjusted padding
+    paddingHorizontal: 10,
   },
   logo: {
     width: 40,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   prominentTagline: {
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 15,
+    marginTop: 0, // Removed marginTop
   },
 });
 

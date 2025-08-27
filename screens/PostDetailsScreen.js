@@ -19,6 +19,7 @@ import {
   doc,
   collection,
   query,
+  where,
   orderBy,
   onSnapshot,
   addDoc,
@@ -46,9 +47,40 @@ const fetchRepliesRecursively = async (collectionRef) => {
   return replies;
 };
 
+// Function to get a user's UID by their username
+const getUserIdByUsername = async (username) => {
+  if (!username) return null;
+  const usersRef = collection(db, 'users');
+  const q = query(usersRef, where('username', '==', username));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const userDoc = querySnapshot.docs[0];
+    return userDoc.id;
+  }
+  return null;
+};
+
+// Recursive Reply Item Component
 const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   const { colors } = useTheme();
-  const marginLeft = level * 20;
+  const marginLeft = level > 0 ? level * 10 + 10 : 0;
+
+  // Highlight tagged users in the text
+  const renderTextWithTags = () => {
+    if (!item.text) return null;
+    const parts = item.text.split(/(@\w+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <Text key={index} style={{ color: colors.secondary, fontWeight: 'bold' }}>
+            {part}
+          </Text>
+        );
+      }
+      return <Text key={index}>{part}</Text>;
+    });
+  };
 
   return (
     <View style={[styles.replyItemContainer, { marginLeft: marginLeft, borderLeftColor: colors.border }]}>
@@ -56,7 +88,9 @@ const ReplyItem = ({ item, level, postId, onReplyPress }) => {
         <Text style={[styles.replyAuthor, { color: colors.primary }]}>
           {item.username}
         </Text>
-        <Text style={[styles.replyText, { color: colors.text }]}>{item.text}</Text>
+        <Text style={[styles.replyText, { color: colors.text }]}>
+          {renderTextWithTags()}
+        </Text>
         {item.createdAt && (
           <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
             {new Date(item.createdAt.toDate()).toLocaleString()}
@@ -150,27 +184,56 @@ const PostDetailsScreen = () => {
     setIsReplying(true);
 
     try {
-      // Logic to add a nested reply to a comment or a top-level reply to a post
       const repliesCollectionRef = parentReply
         ? collection(db, 'posts', postId, 'replies', parentReply.id, 'replies')
         : collection(db, 'posts', postId, 'replies');
+
+      const taggedUsernames = replyText.match(/@(\w+)/g) || [];
+      const taggedUserIds = [];
+
+      for (const tag of taggedUsernames) {
+        const username = tag.substring(1); // Remove the @
+        const userId = await getUserIdByUsername(username);
+        if (userId && userId !== currentUser.uid) { // Check to make sure user isn't tagging themselves
+          taggedUserIds.push(userId);
+        }
+      }
 
       await addDoc(repliesCollectionRef, {
         userId: currentUser.uid,
         username: appUser.username || appUser.anonymousId || 'Anonymous',
         text: replyText.trim(),
         createdAt: serverTimestamp(),
+        taggedUsers: taggedUserIds,
       });
       setReplyText('');
-      setParentReply(null); // Clear parent reply
-      
-      // NEW: Add a notification to the original post author
+      setParentReply(null);
+
+      // Immediately refetch replies so UI updates without waiting for Firestore listener
+      const repliesCollectionTopLevel = collection(db, 'posts', postId, 'replies');
+      const fetchedReplies = await fetchRepliesRecursively(repliesCollectionTopLevel);
+      setReplies(fetchedReplies);
+
+      // Add a notification to the original post author
       if (post && post.userId !== currentUser.uid) {
         await addDoc(collection(db, 'notifications'), {
           recipientId: post.userId,
           type: 'reply',
           postId: postId,
-          postText: post.text.substring(0, 50) + '...', // Truncate for notification
+          postText: post.text.substring(0, 50) + '...',
+          senderUsername: appUser.username || 'Anonymous',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      // Add notifications to tagged users
+      for (const taggedUserId of taggedUserIds) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: taggedUserId,
+          type: 'mention',
+          postId: postId,
+          postText: replyText.substring(0, 50) + '...',
           senderUsername: appUser.username || 'Anonymous',
           read: false,
           createdAt: serverTimestamp(),
@@ -187,7 +250,6 @@ const PostDetailsScreen = () => {
 
   const handleReplyPress = (reply) => {
     setParentReply(reply);
-    // You can also focus the text input here
   };
 
   const renderReplyItem = ({ item }) => {
@@ -224,7 +286,7 @@ const PostDetailsScreen = () => {
       </View>
 
       <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.select({ 
           ios: 90,
@@ -232,74 +294,79 @@ const PostDetailsScreen = () => {
         })}
         enabled={true}
       >
-        <FlatList
-          style={styles.flatListStyle}
-          ListHeaderComponent={() => (
-            <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>
-                {post.username} {post.anonymousId}
-              </Text>
-              <Text style={[styles.postDetailText, { color: colors.text }]}>{post.text}</Text>
-              {post.createdAt && (
-                <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
-                  {new Date(post.createdAt.toDate()).toLocaleString()}
+        <View style={{ flex: 1 }}>
+          <FlatList
+            style={{ flex: 1 }}
+            ListHeaderComponent={() => (
+              <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>
+                  {post.username} {post.anonymousId}
                 </Text>
+                <Text style={[styles.postDetailText, { color: colors.text }]}>{post.text}</Text>
+                {post.createdAt && (
+                  <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
+                    {new Date(post.createdAt.toDate()).toLocaleString()}
+                  </Text>
+                )}
+                <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
+              </View>
+            )}
+            data={replies}
+            renderItem={renderReplyItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[styles.repliesListContent, { flexGrow: 1 }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          />
+
+          {currentUser && (
+            <View style={[
+              styles.replyInputContainer, 
+              { 
+                backgroundColor: colors.card, 
+                borderTopColor: colors.border,
+                paddingBottom: insets.bottom || 10
+              }
+            ]}>
+              <TextInput
+                style={[styles.replyTextInput, { 
+                  color: colors.text, 
+                  borderColor: colors.border,
+                  backgroundColor: colors.background
+                }]}
+                placeholder={parentReply ? `Replying to ${parentReply.username}` : "Write a reply..."}
+                placeholderTextColor={colors.placeholder}
+                multiline
+                value={replyText}
+                onChangeText={setReplyText}
+                editable={!isReplying}
+                textAlignVertical="top"
+              />
+              {parentReply && (
+                <TouchableOpacity onPress={() => setParentReply(null)} style={styles.cancelReplyButton}>
+                  <Ionicons name="close-circle" size={24} color={colors.text} />
+                </TouchableOpacity>
               )}
-              <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
+              <TouchableOpacity
+                style={[
+                  styles.replyButton, 
+                  { 
+                    backgroundColor: replyText.trim() && !isReplying ? colors.primary : colors.border 
+                  }
+                ]}
+                onPress={handleAddReply}
+                disabled={isReplying || !replyText.trim()}
+              >
+                <Text style={[
+                  styles.replyButtonText,
+                  { color: replyText.trim() && !isReplying ? 'white' : colors.placeholder }
+                ]}>
+                  {isReplying ? 'Replying...' : 'Reply'}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
-          data={replies}
-          renderItem={renderReplyItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.repliesListContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        />
-
-        {currentUser && (
-          <View style={[styles.replyInputContainer, { 
-            backgroundColor: colors.card, 
-            borderTopColor: colors.border,
-            paddingBottom: insets.bottom || 10
-          }]}>
-            <TextInput
-              style={[styles.replyTextInput, { 
-                color: colors.text, 
-                borderColor: colors.border,
-                backgroundColor: colors.background
-              }]}
-              placeholder={parentReply ? `Replying to ${parentReply.username}` : "Write a reply..."}
-              placeholderTextColor={colors.placeholder}
-              multiline
-              value={replyText}
-              onChangeText={setReplyText}
-              editable={!isReplying}
-              textAlignVertical="top"
-            />
-            {parentReply && (
-              <TouchableOpacity onPress={() => setParentReply(null)} style={styles.cancelReplyButton}>
-                <Ionicons name="close-circle" size={24} color={colors.text} />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[
-                styles.replyButton, 
-                { 
-                  backgroundColor: replyText.trim() && !isReplying ? colors.primary : colors.border 
-                }
-              ]}
-              onPress={handleAddReply}
-              disabled={isReplying || !replyText.trim()}
-            >
-              <Text style={[
-                styles.replyButtonText,
-                { color: replyText.trim() && !isReplying ? 'white' : colors.placeholder }
-              ]}>
-                {isReplying ? 'Replying...' : 'Reply'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
