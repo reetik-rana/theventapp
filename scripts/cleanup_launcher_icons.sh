@@ -1,22 +1,22 @@
 #!/bin/bash
 
-ICON_NAMES=("ic_launcher.png" "ic_launcher_foreground.webp" "ic_launcher_round.webp")
 RES_DIR="/home/babayaga/Documents/theventapp/android/app/src/main/res"
-ASSETS_DIR="/home/babayaga/Documents/theventapp/assets"
+ICON_PATTERNS=("ic_launcher*" "ic_launcher_foreground*" "ic_launcher_round*")
 
-echo "Cleaning up launcher icons..."
+echo "Cleaning up launcher icons from mipmap directories..."
 
-# Remove icons from all mipmap-* directories
 for dir in "$RES_DIR"/mipmap-*; do
-  for icon in "${ICON_NAMES[@]}"; do
-    if [ -f "$dir/$icon" ]; then
-      echo "Removing $dir/$icon"
-      rm "$dir/$icon"
-    fi
+  for pattern in "${ICON_PATTERNS[@]}"; do
+    for file in "$dir"/$pattern; do
+      if [ -f "$file" ]; then
+        echo "Removing $file"
+        rm "$file"
+      fi
+    done
   done
 done
 
-# Remove icons from assets directory
+echo "Cleanup complete."
 for icon in "${ICON_NAMES[@]}"; do
   if [ -f "$ASSETS_DIR/$icon" ]; then
     echo "Removing $ASSETS_DIR/$icon"
