@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, Linking, Image } from
 import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.5';
 const ADMIN_EMAIL = 'capsprout2001@proton.me';
 const GITHUB_URL = 'https://github.com/reetik-rana/theventapp';
 
