@@ -28,6 +28,7 @@ const AboutScreen = () => {
         taglineFontSize={20}
         showLogo={false}
       />
+      <View style={{ height: 10 }} />
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.content}>
           <Image source={require('../assets/ventlogo.png')} style={styles.logo} />

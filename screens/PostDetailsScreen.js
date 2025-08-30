@@ -11,7 +11,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  Modal,
+  Linking,
+  Image
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { db } from '../firebaseConfig';
@@ -30,6 +33,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { categories } from '../utils/helpers';
 
 // This recursive function fetches all replies and their nested replies
 const fetchRepliesRecursively = async (collectionRef) => {
@@ -108,6 +112,79 @@ const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   );
 };
 
+// Helper to detect and render URLs as clickable links
+const renderTextWithLinks = (text, textStyle) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, idx) => {
+    if (urlRegex.test(part)) {
+      return (
+        <Text
+          key={idx}
+          style={[textStyle, { color: '#1e90ff', textDecorationLine: 'underline' }]}
+          onPress={() => Linking.openURL(part)}
+        >
+          {part}
+        </Text>
+      );
+    }
+    return <Text key={idx} style={textStyle}>{part}</Text>;
+  });
+};
+
+// Helper to extract the first URL from text
+const extractFirstUrl = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = text.match(urlRegex);
+  return match ? match[0] : null;
+};
+
+// Helper to get preview info for supported services
+const getLinkPreview = (url) => {
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  if (ytMatch) {
+    return {
+      type: 'youtube',
+      title: 'YouTube Video',
+      thumbnail: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`,
+      brandColor: '#FF0000'
+    };
+  }
+  if (/open\.spotify\.com/.test(url)) {
+    return {
+      type: 'spotify',
+      title: 'Spotify Link',
+      thumbnail: 'https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_CMYK_Green.png',
+      brandColor: '#1DB954'
+    };
+  }
+  if (/music\.apple\.com/.test(url)) {
+    return {
+      type: 'applemusic',
+      title: 'Apple Music Link',
+      thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/1/19/Apple_Music_logo.png',
+      brandColor: '#FA233B'
+    };
+  }
+  if (/instagram\.com/.test(url)) {
+    return {
+      type: 'instagram',
+      title: 'Instagram Post',
+      thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png',
+      brandColor: '#C13584'
+    };
+  }
+  if (/facebook\.com/.test(url)) {
+    return {
+      type: 'facebook',
+      title: 'Facebook Post',
+      thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
+      brandColor: '#1877F3'
+    };
+  }
+  return null;
+};
+
 const PostDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -123,6 +200,8 @@ const PostDetailsScreen = () => {
   const [replyText, setReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [parentReply, setParentReply] = useState(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
     if (!postId) {
@@ -256,6 +335,13 @@ const PostDetailsScreen = () => {
     return <ReplyItem item={item} level={0} postId={postId} onReplyPress={handleReplyPress} />;
   };
 
+  // Helper to truncate long URLs for display
+  const truncateUrl = (url, maxLength = 40) => {
+    if (!url) return '';
+    if (url.length <= maxLength) return url;
+    return url.slice(0, maxLength - 3) + '...';
+  };
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -302,7 +388,84 @@ const PostDetailsScreen = () => {
                 <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>
                   {post.username} {post.anonymousId}
                 </Text>
-                <Text style={[styles.postDetailText, { color: colors.text }]}>{post.text}</Text>
+                {/* Render text with clickable links */}
+                <Text style={[styles.postDetailText, { color: colors.text }]}>
+                  {renderTextWithLinks(post.text, [styles.postDetailText, { color: colors.text }])}
+                </Text>
+                {/* Render preview for supported services */}
+                {(() => {
+                  const firstUrl = extractFirstUrl(post.text);
+                  const preview = firstUrl ? getLinkPreview(firstUrl) : null;
+                  if (firstUrl && preview) {
+                    return (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(firstUrl)}
+                        style={{ marginTop: 8, alignSelf: 'stretch' }}
+                        activeOpacity={0.85}
+                      >
+                        <View style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: colors.background,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          padding: 8,
+                          marginHorizontal: 0,
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 2,
+                          elevation: 1,
+                        }}>
+                          <Image
+                            source={{ uri: preview.thumbnail }}
+                            style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#fff' }}
+                            resizeMode="contain"
+                          />
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginBottom: 2 }}>
+                              {preview.title}
+                            </Text>
+                            <Text
+                              style={{
+                                color: colors.placeholder,
+                                fontSize: 12,
+                                textDecorationLine: 'underline',
+                                maxWidth: '100%',
+                              }}
+                              numberOfLines={1}
+                              ellipsizeMode="middle"
+                            >
+                              {truncateUrl(firstUrl)}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  }
+                  if (firstUrl && !preview) {
+                    return (
+                      <TouchableOpacity onPress={() => Linking.openURL(firstUrl)} style={{ marginTop: 8 }}>
+                        <Text
+                          style={{
+                            color: '#1e90ff',
+                            textDecorationLine: 'underline',
+                            fontSize: 13,
+                            maxWidth: '100%',
+                          }}
+                          numberOfLines={1}
+                          ellipsizeMode="middle"
+                        >
+                          {truncateUrl(firstUrl)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }
+                  return null;
+                })()}
                 {post.createdAt && (
                   <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
                     {new Date(post.createdAt.toDate()).toLocaleString()}
@@ -368,6 +531,45 @@ const PostDetailsScreen = () => {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCategoryModal}
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select a Category</Text>
+            <FlatList
+              data={['All', ...categories]}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    { borderBottomColor: colors.border }
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory(item);
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }]}>
+                    {item}
+                  </Text>
+                  {selectedCategory === item && (
+                    <Ionicons name="checkmark" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity onPress={() => setShowCategoryModal(false)} style={styles.modalCloseButton}>
+              <Text style={[styles.modalCloseButtonText, { color: colors.primary }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -549,6 +751,46 @@ const styles = StyleSheet.create({
     top: -10,
     right: 15,
     zIndex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalItemText: {
+    fontSize: 16,
+    flex: 1,
+  },
+  modalCloseButton: {
+    marginTop: 15,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

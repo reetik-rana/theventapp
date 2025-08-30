@@ -95,6 +95,7 @@ const PostScreen = ({ navigation }) => {
         taglineFontSize={20}
         showLogo={false}
       />
+      <View style={{ height: 10 }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}

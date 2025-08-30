@@ -1,4 +1,3 @@
-
 // screens/ProfileScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
@@ -7,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../firebaseConfig';
-import { doc, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, where, updateDoc, getDoc } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
@@ -15,6 +14,7 @@ export default function ProfileScreen() {
   const { theme, toggleTheme, colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [publicProfile, setPublicProfile] = useState(true);
 
   const handleUpdateApp = () => {
     Linking.openURL('https://github.com/reetik-rana/theventapp/releases').catch((err) => {
@@ -38,6 +38,30 @@ export default function ProfileScreen() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // Fetch publicProfile setting on mount
+  useEffect(() => {
+    const fetchPublicProfile = async () => {
+      if (!currentUser) return;
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists() && userDoc.data().publicProfile !== undefined) {
+        setPublicProfile(userDoc.data().publicProfile);
+      }
+    };
+    fetchPublicProfile();
+  }, [currentUser]);
+
+  // Update publicProfile in Firestore
+  const handleTogglePublicProfile = async () => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userDocRef, { publicProfile: !publicProfile });
+      setPublicProfile(!publicProfile);
+    } catch (error) {
+      Alert.alert('Error', 'Could not update profile visibility.');
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -47,7 +71,6 @@ export default function ProfileScreen() {
       Alert.alert('Failed to log out', 'Please try again.');
     }
   };
-
 
   if (loading) {
     return (
@@ -68,6 +91,7 @@ export default function ProfileScreen() {
           taglineFontSize={16}
           showLogo={false}
         />
+        <View style={{ height: 10 }} />
         <View style={styles.profileContent}>
           <Text style={[styles.title, { color: colors.text }]}>Not Logged In</Text>
           <Text style={[styles.subtitle, { color: colors.text }]}>Please log in to view your profile.</Text>
@@ -85,9 +109,35 @@ export default function ProfileScreen() {
         taglineFontSize={20}
         showLogo={false}
       />
+      <View style={{ height: 10 }} />
       <View style={styles.profileContent}>
         <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
         <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {currentUser.uid}</Text>
+
+        {/* Public Profile Toggle */}
+        <View style={styles.themeToggleContainer}>
+          <Text style={[styles.themeToggleText, { color: colors.text }]}>
+            Allow others to view my profile
+          </Text>
+          <Switch
+            trackColor={{ false: '#767577', true: colors.primary }}
+            thumbColor={publicProfile ? colors.card : '#f4f3f4'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={handleTogglePublicProfile}
+            value={publicProfile}
+          />
+        </View>
+
+        {/* View as public profile */}
+        <TouchableOpacity
+          style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('ViewUserProfile', { userId: currentUser.uid })}
+        >
+          <Ionicons name="eye" size={24} color={colors.text} />
+          <Text style={[styles.myPostsButtonText, { color: colors.text }]}>
+            View My Public Profile
+          </Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.notificationsButton, { backgroundColor: colors.card, borderColor: colors.border }]}

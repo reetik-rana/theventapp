@@ -23,6 +23,11 @@
     "web": {
       "favicon": "./assets/ventlogo.png"
     },
+    "splash": {
+      "image": "./assets/ventlogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "extra": {
       "eas": {
         "projectId": "60ebc278-cb73-4b21-9a01-23ae89ea58e1"
