@@ -8,6 +8,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates'; // NEW: Import Expo Updates
+import ViewUserProfile from './screens/ViewUserProfile';
 
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
@@ -103,6 +104,11 @@ function AppNavigator() {
       <Stack.Screen
         name="UserPosts"
         component={UserPostsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ViewUserProfile"
+        component={ViewUserProfile}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

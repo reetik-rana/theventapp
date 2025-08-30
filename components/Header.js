@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     width: '100%',
-    padding: 10, // Decreased from 15 to 10
+    padding: 10,
     paddingTop: Platform.OS === 'android' ? 0 : 0, 
     flexDirection: 'row',
     alignItems: 'center',
@@ -57,8 +57,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerContainerNoLogo: {
-    justifyContent: 'center',
-    paddingVertical: 10 + (Platform.OS === 'android' ? 10 : 0), // Adjusted padding
+    justifyContent: Platform.select({
+      web: 'flex-start', // Align to the left on web
+      default: 'center', // Keep centered on mobile
+    }),
+    paddingVertical: 10 + (Platform.OS === 'android' ? 10 : 0),
     paddingHorizontal: 10,
   },
   logo: {
@@ -81,8 +84,11 @@ const styles = StyleSheet.create({
   },
   prominentTagline: {
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 0, // Removed marginTop
+    textAlign: Platform.select({
+      web: 'left', // Align text to the left on web
+      default: 'center', // Keep centered on mobile
+    }),
+    marginTop: 0,
   },
 });
 

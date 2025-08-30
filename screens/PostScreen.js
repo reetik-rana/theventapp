@@ -10,9 +10,9 @@ import {
   Platform,
   SafeAreaView,
   ActivityIndicator,
-  Modal, // ADDED: Import Modal
-  FlatList, // ADDED: Import FlatList
-  ScrollView, // ADDED: Import ScrollView
+  Modal,
+  FlatList,
+  ScrollView,
 } from 'react-native';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
@@ -100,55 +100,57 @@ const PostScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <View style={[styles.content, { paddingHorizontal: 20 }]}>
-          <Text style={[styles.label, { color: colors.text }]}>What's on your mind?</Text>
-          <Text style={[styles.subtitle, { color: colors.text }]}>Your thought will be shared under your username</Text>
+        <View style={[styles.contentContainer, Platform.OS === 'web' && styles.webContentContainer]}>
+          <View style={[styles.content, { paddingHorizontal: 20 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>What's on your mind?</Text>
+            <Text style={[styles.subtitle, { color: colors.text }]}>Your thought will be shared under your username</Text>
 
-          <View style={styles.tagSection}>
-            <Text style={[styles.tagLabel, { color: colors.text }]}>Selected Tag:</Text>
-            <TouchableOpacity
-              style={[
-                styles.selectedTagButton,
-                { borderColor: colors.border, backgroundColor: colors.card }
-              ]}
-              onPress={() => setShowTagList(true)}
-            >
-              <Text style={[styles.selectedTagText, { color: colors.text }]}>
-                {selectedTag || 'Select a tag...'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.tagSection}>
+              <Text style={[styles.tagLabel, { color: colors.text }]}>Selected Tag:</Text>
+              <TouchableOpacity
+                style={[
+                  styles.selectedTagButton,
+                  { borderColor: colors.border, backgroundColor: colors.card }
+                ]}
+                onPress={() => setShowTagList(true)}
+              >
+                <Text style={[styles.selectedTagText, { color: colors.text }]}>
+                  {selectedTag || 'Select a tag...'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          <ScrollView style={[styles.inputScrollView, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ThoughtInput
-              value={thoughtText}
-              onChangeText={setThoughtText}
-              placeholder="Type your thoughts here..."
-              placeholderTextColor={colors.placeholder}
-              maxLength={500}
-            />
-          </ScrollView>
+            <ScrollView style={[styles.inputScrollView, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <ThoughtInput
+                value={thoughtText}
+                onChangeText={setThoughtText}
+                placeholder="Type your thoughts here..."
+                placeholderTextColor={colors.placeholder}
+                maxLength={500}
+              />
+            </ScrollView>
 
-          <View style={styles.counterContainer}>
-            <Text style={[styles.counter, { color: colors.text }]}>{thoughtText.length}/500</Text>
-          </View>
+            <View style={styles.counterContainer}>
+              <Text style={[styles.counter, { color: colors.text }]}>{thoughtText.length}/500</Text>
+            </View>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[
-                styles.postButton,
-                { backgroundColor: colors.primary },
-                (!thoughtText.trim() || isPosting) && styles.disabledButton
-              ]}
-              onPress={handlePost}
-              disabled={!thoughtText.trim() || isPosting}
-            >
-              {isPosting ? (
-                <ActivityIndicator color={colors.card} />
-              ) : (
-                <Text style={styles.postButtonText}>Share Thought</Text>
-              )}
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
+                  { backgroundColor: colors.primary },
+                  (!thoughtText.trim() || isPosting) && styles.disabledButton
+                ]}
+                onPress={handlePost}
+                disabled={!thoughtText.trim() || isPosting}
+              >
+                {isPosting ? (
+                  <ActivityIndicator color={colors.card} />
+                ) : (
+                  <Text style={styles.postButtonText}>Share Thought</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -184,9 +186,18 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  webContentContainer: {
+    alignItems: 'center',
+  },
   content: {
     flex: 1,
     paddingVertical: 20,
+    width: '100%',
+    maxWidth: 600,
   },
   label: {
     fontSize: 18,
