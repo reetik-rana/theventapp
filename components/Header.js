@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   headerContainerNoLogo: {
     justifyContent: Platform.select({
-      web: 'flex-start', // Align to the left on web
+      web: 'center', // Align to the center on web
       default: 'center', // Keep centered on mobile
     }),
     paddingVertical: 10 + (Platform.OS === 'android' ? 10 : 0),

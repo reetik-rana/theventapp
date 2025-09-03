@@ -364,9 +364,13 @@ const PostDetailsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: 'black' }]}>
+      {/* header that respects safe-area insets */}
+      <View style={[styles.header, { backgroundColor: 'black', paddingTop: (insets.top || 12) + 6, paddingBottom: 12 }]}>
         <Text style={[styles.headerTitle, { color: 'white' }]}>Post Details</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonHeader}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.backButtonHeader, { top: (insets.top || 12) + 6 }]}
+        >
             <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
       </View>

@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // posts collection
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // likes subcollection
+      match /likes/{likeId} {
+        allow create: if request.auth != null && request.auth.uid == likeId;
+        allow delete: if request.auth != null && request.auth.uid == likeId;
+        allow read: if true;
+        allow update: if false;
+      }
+
+      // recursive replies under posts/{postId}/replies/**
+      match /replies/{allReplies=**} {
+        allow create: if request.auth != null;
+        allow read: if true;
+        allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow update: if false;
+      }
+    }
+
+    // thoughts collection
+    match /thoughts/{thoughtId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    // users collection: public read, only owner can write
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // notifications collection
+    match /notifications/{notificationId} {
+      // Simplified create guard: require auth and necessary fields.
+      // (If you need to verify the recipient equals the post owner, do that server-side
+      //  or test carefully in the emulator before adding dynamic get() checks.)
+      allow create: if request.auth != null
+                    && request.resource.data.postId is string
+                    && request.resource.data.recipientId is string
+                    && request.resource.data.type is string
+                    && request.resource.data.senderUsername is string;
+
+      // users may read/update/delete their own notifications
+      allow read: if request.auth != null && request.auth.uid == resource.data.recipientId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.recipientId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.recipientId;
+    }
+  }
+}
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile pictures stored under /profilePictures/{userId}.jpg
+    match /profilePictures/{userId}.jpg {
+      // Allow public read (change to `if request.auth != null` to require auth)
+      allow read: if true;
+
+      // Only the authenticated owner may upload/overwrite their own profile picture.
+      // Enforce type and size limits to reduce abuse.
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Deny everything else by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

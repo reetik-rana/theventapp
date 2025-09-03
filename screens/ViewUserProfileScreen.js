@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ViewUserProfileScreen = ({ route }) => {
   const { userId } = route.params;
   const { colors } = useTheme();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -48,6 +50,7 @@ const ViewUserProfileScreen = ({ route }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
       <Header tagline="User Profile" headerBgColor="black" headerTextColor="white" taglineFontSize={20} showLogo={false} />
       <View style={{ padding: 20 }}>
         <Text style={{ color: colors.text, fontSize: 22, fontWeight: 'bold' }}>{user.username}</Text>
