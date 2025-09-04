@@ -57,7 +57,7 @@ const PostScreen = ({ navigation }) => {
         anonymousId: randomEmoji,
         likes: 0,
         tag: selectedTag,
-        profilePic: appUser?.profilePic || null, // store uploader's profile picture
+        profilePic: appUser?.profilePic || null,
       });
 
       setThoughtText('');

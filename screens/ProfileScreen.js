@@ -1,6 +1,6 @@
 // screens/ProfileScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity, Linking, ScrollView, Platform, Image } from 'react-native'; // ADDED: ScrollView, Platform, Image
+import { View, Text, Button, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity, Linking, ScrollView, Platform, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
@@ -10,7 +10,6 @@ import { doc, collection, onSnapshot, query, where, updateDoc, getDoc } from 'fi
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function ProfileScreen() {
   const { appUser, currentUser, loading, logout } = useAuth();
@@ -43,17 +42,23 @@ export default function ProfileScreen() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Fetch publicProfile setting on mount
+  // Fetch publicProfile and profilePic settings on mount
   useEffect(() => {
-    const fetchPublicProfile = async () => {
+    const fetchUserData = async () => {
       if (!currentUser) return;
       const userDocRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists() && userDoc.data().publicProfile !== undefined) {
-        setPublicProfile(userDoc.data().publicProfile);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data.publicProfile !== undefined) {
+          setPublicProfile(data.publicProfile);
+        }
+        if (data.profilePic) {
+          setProfilePic(data.profilePic);
+        }
       }
     };
-    fetchPublicProfile();
+    fetchUserData();
   }, [currentUser]);
 
   // Update publicProfile in Firestore
@@ -77,27 +82,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // Helper: convert a local file URI to a Blob using XMLHttpRequest (more reliable than fetch on RN)
-  const uriToBlob = (uri) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-          resolve(xhr.response);
-        };
-        xhr.onerror = function () {
-          reject(new TypeError('Network request failed'));
-        };
-        xhr.responseType = 'blob';
-        xhr.open('GET', uri, true);
-        xhr.send(null);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  };
-
-  // Try dynamic import of expo-image-picker. If not available, fallback to paste-URL modal.
+  // --- NEW FUNCTION TO UPLOAD IMAGE TO CLOUDINARY ---
   const pickAndUpload = async () => {
     if (!currentUser) {
       Alert.alert('Not logged in', 'Please log in to upload a profile picture.');
@@ -109,72 +94,65 @@ export default function ProfileScreen() {
         Alert.alert('Permission required', 'Permission to access photos is required.');
         return;
       }
-      // SAFE: prefer ImagePicker.MediaType (new API). Do not reference deprecated MediaTypeOptions.
-      const mediaTypesOption = (ImagePicker && ImagePicker.MediaType && ImagePicker.MediaType.Images) || undefined;
 
-      const launchOptions = {
-        quality: 0.8,
-        base64: false,
-      };
-      if (mediaTypesOption) launchOptions.mediaTypes = mediaTypesOption;
+      const mediaTypes =
+        (ImagePicker.MediaType && ImagePicker.MediaType.Images) ||
+        (ImagePicker.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images);
 
-      const result = await ImagePicker.launchImageLibraryAsync(launchOptions);
-      if (result.cancelled) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,          // needed for direct base64 upload
+      });
 
-      // upload to Firebase Storage
-      const storage = getStorage();
-
-      // Try fetch().blob() first, fallback to XHR uriToBlob if fetch fails
-      let blob;
-      try {
-        const response = await fetch(result.uri);
-        blob = await response.blob();
-      } catch (fetchErr) {
-        // fallback for platforms/engines where fetch cannot read file:// URIs
-        blob = await uriToBlob(result.uri);
-      }
-
-      const fileRef = storageRef(storage, `profilePictures/${currentUser.uid}.jpg`);
-      await uploadBytes(fileRef, blob);
-      const url = await getDownloadURL(fileRef);
-
-      // save to Firestore and update local preview
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePic: url });
-      setProfilePic(url);
-      // Optional: update appUser in context so other screens see the new pic immediately
-      // (updateAuthUserProfile && updateAuthUserProfile({ profilePic: url }));
-      Alert.alert('Success', 'Profile picture uploaded.');
-    } catch (err) {
-      console.error('Upload error', err);
-      Alert.alert(
-        'Upload failed',
-        'Could not upload image. Ensure the app has storage permissions and expo-image-picker is installed. Please try again.'
-      );
-    }
-  };
-
-  // NEW: initialize profilePic from context (appUser) or Firestore on mount
-  useEffect(() => {
-    let mounted = true;
-    const initProfilePic = async () => {
-      if (appUser && appUser.profilePic) {
-        if (mounted) setProfilePic(appUser.profilePic);
+      if (result.canceled || !result.assets || !result.assets.length) {
         return;
       }
-      if (!currentUser) return;
-      try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (mounted) setProfilePic(data.profilePic || null);
-        }
-      } catch (e) {
-        // ignore – picture optional
+
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Error', 'Could not read image data (no base64). Try another image.');
+        return;
       }
-    };
-    initProfilePic();
-    return () => { mounted = false; };
-  }, [appUser, currentUser]);
+
+      // TODO: Replace with your Cloudinary cloud name & unsigned preset
+      const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dycn1rw2e/image/upload';
+      const UPLOAD_PRESET = 'thevent-profile-pics';
+
+      const mime = asset.mimeType || 'image/jpeg';
+      const dataUrl = `data:${mime};base64,${asset.base64}`;
+
+      const formData = new FormData();
+      formData.append('file', dataUrl);
+      formData.append('upload_preset', UPLOAD_PRESET);
+
+      Alert.alert('Uploading', 'Uploading your profile picture...');
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: 'POST',
+        body: formData, // Let React Native set multipart headers automatically
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok || !responseData.secure_url) {
+        const errMsg =
+          (responseData.error && responseData.error.message) ||
+          'Unknown upload error (no secure_url). Check preset / cloud name.';
+        throw new Error(errMsg);
+      }
+
+      const photoURL = responseData.secure_url;
+      await updateDoc(doc(db, 'users', currentUser.uid), { profilePic: photoURL });
+      setProfilePic(photoURL);
+      Alert.alert('Success', 'Profile picture uploaded!');
+    } catch (err) {
+      console.error('Upload error', err);
+      Alert.alert('Upload failed', err.message || 'Could not upload image. Please try again.');
+    }
+  };
 
   if (loading) {
     return (
@@ -215,11 +193,11 @@ export default function ProfileScreen() {
         showLogo={false}
       />
       <View style={{ height: Platform.OS === 'web' ? 10 : 8 }} />
-      {/* Scrollable profile content */}
       <ScrollView
         contentContainerStyle={[styles.profileContentScroll, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={true}
       >
+        {/* --- MODIFIED: Display the profile picture --- */}
         {profilePic ? (
           <Image source={{ uri: profilePic }} style={{ width: 96, height: 96, borderRadius: 48, marginBottom: 12 }} />
         ) : (
@@ -230,7 +208,7 @@ export default function ProfileScreen() {
         <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
         <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {currentUser.uid}</Text>
 
-        {/* Upload / Change Profile Picture */}
+        {/* --- ADDED: Upload / Change Profile Picture Button --- */}
         <TouchableOpacity
           style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={pickAndUpload}
@@ -239,30 +217,7 @@ export default function ProfileScreen() {
           <Text style={[styles.myPostsButtonText, { color: colors.text }]}>Upload / Change Profile Picture</Text>
         </TouchableOpacity>
 
-        {/* Public Profile Toggle */}
-        <View style={styles.themeToggleContainer}>
-          <Text style={[styles.themeToggleText, { color: colors.text }]}>
-            Allow others to view my profile
-          </Text>
-          <Switch
-            trackColor={{ false: '#767577', true: colors.primary }}
-            thumbColor={publicProfile ? colors.card : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={handleTogglePublicProfile}
-            value={publicProfile}
-          />
-        </View>
-
-        {/* View as public profile */}
-        <TouchableOpacity
-          style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => navigation.navigate('ViewUserProfile', { userId: currentUser.uid })}
-        >
-          <Ionicons name="eye" size={24} color={colors.text} />
-          <Text style={[styles.myPostsButtonText, { color: colors.text }]}>
-            View My Public Profile
-          </Text>
-        </TouchableOpacity>
+        {/* Public Profile Toggle removed */}
 
         <TouchableOpacity
           style={[styles.notificationsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -326,7 +281,7 @@ const styles = StyleSheet.create({
   },
   profileContentScroll: {
     flexGrow: 1,
-    justifyContent: 'flex-start', // start at top so scrolling feels natural
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: 20,
     paddingHorizontal: 20,
@@ -385,7 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
   },
-  myPostsButton: { // NEW: Style for the My Posts button
+  myPostsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -396,8 +351,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 20,
   },
-  myPostsButtonText: { // NEW: Style for the My Posts button text
-    fontSize: 18,
+  myPostsButtonText: {
+    fontSize: 15,
     fontWeight: 'bold',
     marginLeft: 10,
   },

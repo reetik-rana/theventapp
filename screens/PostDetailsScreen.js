@@ -28,6 +28,7 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
+  getDoc,
 } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -66,9 +67,27 @@ const getUserIdByUsername = async (username) => {
 };
 
 // Recursive Reply Item Component
+import { useRef, useState as useLocalState, useEffect as useLocalEffect } from 'react';
 const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   const { colors } = useTheme();
   const marginLeft = level > 0 ? level * 10 + 10 : 0;
+  const [profilePic, setProfilePic] = useLocalState(item.profilePic || null);
+  const [anonymousId, setAnonymousId] = useLocalState(item.anonymousId || '🙂');
+
+  useLocalEffect(() => {
+    let ignore = false;
+    // Only fetch if missing or outdated
+    if (!item.profilePic || !item.anonymousId) {
+      getDoc(doc(db, 'users', item.userId)).then(snap => {
+        if (!ignore && snap.exists()) {
+          const data = snap.data();
+          if (!item.profilePic && data.profilePic) setProfilePic(data.profilePic);
+          if (!item.anonymousId && data.anonymousId) setAnonymousId(data.anonymousId);
+        }
+      });
+    }
+    return () => { ignore = true; };
+  }, [item.userId]);
 
   // Highlight tagged users in the text
   const renderTextWithTags = () => {
@@ -89,9 +108,16 @@ const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   return (
     <View style={[styles.replyItemContainer, { marginLeft: marginLeft, borderLeftColor: colors.border }]}>
       <View style={[styles.replyItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.replyAuthor, { color: colors.primary }]}>
-          {item.username}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 }}>
+          {profilePic ? (
+            <Image source={{ uri: profilePic }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+          ) : (
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14 }}>{anonymousId}</Text>
+            </View>
+          )}
+          <Text style={[styles.replyAuthor, { color: colors.primary }]}>{item.username}</Text>
+        </View>
         <Text style={[styles.replyText, { color: colors.text }]}>
           {renderTextWithTags()}
         </Text>
@@ -185,6 +211,19 @@ const getLinkPreview = (url) => {
   return null;
 };
 
+// Helper to recursively find the parent reply's userId (if any)
+const findParentReplyUserId = (replies, parentReplyId) => {
+  if (!parentReplyId || !replies) return null;
+  for (const reply of replies) {
+    if (reply.id === parentReplyId) return reply.userId;
+    if (reply.replies && reply.replies.length) {
+      const found = findParentReplyUserId(reply.replies, parentReplyId);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 const PostDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -202,6 +241,7 @@ const PostDetailsScreen = () => {
   const [parentReply, setParentReply] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [authorProfile, setAuthorProfile] = useState(null); // live user profile (for profilePic / anonymousId)
 
   useEffect(() => {
     if (!postId) {
@@ -213,8 +253,7 @@ const PostDetailsScreen = () => {
     }
 
     const postDocRef = doc(db, 'posts', postId);
-    
-    // Create an onSnapshot listener for the post data
+
     const unsubscribePost = onSnapshot(postDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         setPost({ id: docSnapshot.id, ...docSnapshot.data() });
@@ -231,7 +270,6 @@ const PostDetailsScreen = () => {
       setLoading(false);
     });
 
-    // Create a new listener to fetch replies recursively
     const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
     const unsubscribeReplies = onSnapshot(repliesCollectionRef, async () => {
       try {
@@ -248,6 +286,16 @@ const PostDetailsScreen = () => {
       unsubscribeReplies();
     };
   }, [postId, navigation]);
+
+  // NEW: separate effect to subscribe to author profile (was incorrectly nested before)
+  useEffect(() => {
+    if (!post?.userId) return;
+    const uRef = doc(db, 'users', post.userId);
+    const unsub = onSnapshot(uRef, snap => {
+      if (snap.exists()) setAuthorProfile(snap.data());
+    });
+    return () => unsub();
+  }, [post?.userId]);
 
   const handleAddReply = async () => {
     if (!currentUser || !appUser) {
@@ -284,6 +332,8 @@ const PostDetailsScreen = () => {
         text: replyText.trim(),
         createdAt: serverTimestamp(),
         taggedUsers: taggedUserIds,
+        profilePic: appUser?.profilePic || null,
+        anonymousId: appUser?.anonymousId || '🙂',
       });
       setReplyText('');
       setParentReply(null);
@@ -300,6 +350,19 @@ const PostDetailsScreen = () => {
           type: 'reply',
           postId: postId,
           postText: post.text.substring(0, 50) + '...',
+          senderUsername: appUser.username || 'Anonymous',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      // NEW: Notify parent reply author if replying to a reply (and not self or post author)
+      if (parentReply && parentReply.userId !== currentUser.uid && (!post || parentReply.userId !== post.userId)) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: parentReply.userId,
+          type: 'reply-to-reply',
+          postId: postId,
+          postText: replyText.substring(0, 50) + '...',
           senderUsername: appUser.username || 'Anonymous',
           read: false,
           createdAt: serverTimestamp(),
@@ -387,97 +450,103 @@ const PostDetailsScreen = () => {
         <View style={{ flex: 1 }}>
           <FlatList
             style={{ flex: 1 }}
-            ListHeaderComponent={() => (
-              <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>
-                  {post.username} {post.anonymousId}
-                </Text>
-                {/* Render text with clickable links */}
-                <Text style={[styles.postDetailText, { color: colors.text }]}>
-                  {renderTextWithLinks(post.text, [styles.postDetailText, { color: colors.text }])}
-                </Text>
-                {/* Render preview for supported services */}
-                {(() => {
-                  const firstUrl = extractFirstUrl(post.text);
-                  const preview = firstUrl ? getLinkPreview(firstUrl) : null;
-                  if (firstUrl && preview) {
-                    return (
-                      <TouchableOpacity
-                        onPress={() => Linking.openURL(firstUrl)}
-                        style={{ marginTop: 8, alignSelf: 'stretch' }}
-                        activeOpacity={0.85}
-                      >
-                        <View style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: colors.background,
-                          borderRadius: 8,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          padding: 8,
-                          marginHorizontal: 0,
-                          maxWidth: '100%',
-                          overflow: 'hidden',
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 1 },
-                          shadowOpacity: 0.08,
-                          shadowRadius: 2,
-                          elevation: 1,
-                        }}>
-                          <Image
-                            source={{ uri: preview.thumbnail }}
-                            style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#fff' }}
-                            resizeMode="contain"
-                          />
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginBottom: 2 }}>
-                              {preview.title}
-                            </Text>
-                            <Text
-                              style={{
-                                color: colors.placeholder,
-                                fontSize: 12,
-                                textDecorationLine: 'underline',
-                                maxWidth: '100%',
-                              }}
-                              numberOfLines={1}
-                              ellipsizeMode="middle"
-                            >
-                              {truncateUrl(firstUrl)}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  }
-                  if (firstUrl && !preview) {
-                    return (
-                      <TouchableOpacity onPress={() => Linking.openURL(firstUrl)} style={{ marginTop: 8 }}>
-                        <Text
-                          style={{
-                            color: '#1e90ff',
-                            textDecorationLine: 'underline',
-                            fontSize: 13,
-                            maxWidth: '100%',
-                          }}
-                          numberOfLines={1}
-                          ellipsizeMode="middle"
-                        >
-                          {truncateUrl(firstUrl)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }
-                  return null;
-                })()}
-                {post.createdAt && (
-                  <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
-                    {new Date(post.createdAt.toDate()).toLocaleString()}
+            ListHeaderComponent={() => {
+              const effectiveProfilePic = authorProfile?.profilePic || post.profilePic || null;
+              const effectiveAnonymous = post.anonymousId || authorProfile?.anonymousId || '🙂';
+              const firstUrl = extractFirstUrl(post.text);
+              const preview = firstUrl ? getLinkPreview(firstUrl) : null;
+              return (
+                <View style={[styles.postDetailItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 }}>
+                    {effectiveProfilePic ? (
+                      <Image source={{ uri: effectiveProfilePic }} style={{ width: 54, height: 54, borderRadius: 27 }} />
+                    ) : (
+                      <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 26 }}>{effectiveAnonymous}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>{post.username}</Text>
+                      {effectiveProfilePic && (
+                        <Text style={{ fontSize: 12, color: colors.placeholder }}>{effectiveAnonymous}</Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={[styles.postDetailText, { color: colors.text }]}>
+                    {renderTextWithLinks(post.text, [styles.postDetailText, { color: colors.text }])}
                   </Text>
-                )}
-                <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
-              </View>
-            )}
+                  {firstUrl && preview && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(firstUrl)}
+                      style={{ marginTop: 8, alignSelf: 'stretch' }}
+                      activeOpacity={0.85}
+                    >
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: colors.background,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        padding: 8,
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}>
+                        <Image
+                          source={{ uri: preview.thumbnail }}
+                          style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#fff' }}
+                          resizeMode="contain"
+                        />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginBottom: 2 }}>
+                            {preview.title}
+                          </Text>
+                          <Text
+                            style={{
+                              color: colors.placeholder,
+                              fontSize: 12,
+                              textDecorationLine: 'underline',
+                              maxWidth: '100%',
+                            }}
+                            numberOfLines={1}
+                            ellipsizeMode="middle"
+                          >
+                            {truncateUrl(firstUrl)}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {firstUrl && !preview && (
+                    <TouchableOpacity onPress={() => Linking.openURL(firstUrl)} style={{ marginTop: 8 }}>
+                      <Text
+                        style={{
+                          color: '#1e90ff',
+                          textDecorationLine: 'underline',
+                          fontSize: 13,
+                          maxWidth: '100%',
+                        }}
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                      >
+                        {truncateUrl(firstUrl)}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {post.createdAt && (
+                    <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
+                      {new Date(post.createdAt.toDate()).toLocaleString()}
+                    </Text>
+                  )}
+                  <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>
+                </View>
+              );
+            }}
             data={replies}
             renderItem={renderReplyItem}
             keyExtractor={(item) => item.id}

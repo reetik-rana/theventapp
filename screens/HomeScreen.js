@@ -169,6 +169,12 @@ const HomeScreen = () => {
 	// For storing fetched OG images by URL
 	const [ogImages, setOgImages] = useState({});
 
+	// Cache for user profile pictures and anonymous IDs
+	const [userProfileCache, setUserProfileCache] = useState({});
+
+	// Modal state for profile picture
+	const [modalPic, setModalPic] = useState(null);
+
 	useEffect(() => {
 		const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
 
@@ -231,6 +237,30 @@ const HomeScreen = () => {
 		};
 		fetchAllOgImages();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [posts]);
+
+	// Subscribe to user docs to always have the latest profilePic (even for old posts)
+	useEffect(() => {
+		if (!posts.length) return;
+		const uniqueUserIds = Array.from(new Set(posts.map(p => p.userId)));
+		const unsubscribers = [];
+		uniqueUserIds.forEach(uid => {
+			const uRef = doc(db, 'users', uid);
+			const unsub = onSnapshot(uRef, snap => {
+				if (snap.exists()) {
+					const data = snap.data();
+					setUserProfileCache(prev => ({
+						...prev,
+						[uid]: {
+							profilePic: data.profilePic || null,
+							anonymousId: data.anonymousId || '🙂',
+						},
+					}));
+				}
+			});
+			unsubscribers.push(unsub);
+		});
+		return () => unsubscribers.forEach(u => u());
 	}, [posts]);
 
 	const handleLike = async (postId, postUserId) => {
@@ -354,31 +384,45 @@ const HomeScreen = () => {
 			</Text>
 		);
 
+		// Get cached profilePic and anonymousId
+		const cached = userProfileCache[item.userId];
+		const effectiveProfilePic = cached?.profilePic || item.profilePic || null;
+		const effectiveAnonymous = item.anonymousId || cached?.anonymousId || '🙂';
+
 		return (
 			<View
 				style={[
 					styles.postItem,
-					isWeb && styles.webPostItem, // Apply web-specific style
+					isWeb && styles.webPostItem,
 					{ backgroundColor: colors.card, borderColor: colors.border }
 				]}
 			>
-				<View style={styles.postHeader}>
-					{/* Username clickable */}
-					<TouchableOpacity
-						onPress={() => navigation.navigate('ViewUserProfile', { userId: item.userId })}
-					>
-						<Text style={[styles.postAuthor, { color: colors.primary }]}>
-							{item.username}
-						</Text>
-					</TouchableOpacity>
-					<Text style={[styles.postAuthor, { color: colors.primary, marginLeft: 4 }]}>
-						{item.anonymousId}
-					</Text>
-					{item.tag && (
-						<View style={[styles.tagContainer, { borderColor: colors.primary }]}>
-							<Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
+				<View style={[styles.postHeader, { gap: 8 }]}>
+					{effectiveProfilePic ? (
+						<TouchableOpacity onPress={() => setModalPic(effectiveProfilePic)}>
+							<Image source={{ uri: effectiveProfilePic }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+						</TouchableOpacity>
+					) : (
+						<View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
+							<Text style={{ fontSize: 18 }}>{effectiveAnonymous}</Text>
 						</View>
 					)}
+					<View style={{ flex: 1 }}>
+						<Text style={[styles.postAuthor, { color: colors.primary }]}>{item.username}</Text>
+						<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+							{effectiveProfilePic && (
+								<Text style={{ fontSize: 12, color: colors.placeholder }}>{effectiveAnonymous}</Text>
+							)}
+							{item.tag && (
+								<View style={[
+									styles.tagContainer,
+									{ borderColor: colors.primary, marginLeft: effectiveProfilePic ? 6 : 0 }
+								]}>
+									<Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
+								</View>
+							)}
+						</View>
+					</View>
 				</View>
 				{renderTruncatedText(item.text, styles.postText)}
 				{/* Render preview for supported services */}
@@ -557,7 +601,7 @@ const HomeScreen = () => {
 						<Ionicons name="search" size={20} color={colors.placeholder} style={styles.searchIcon} />
 						<TextInput
 							style={[styles.searchInput, { color: colors.text }]}
-							placeholder="Search thoughts or username..."
+							placeholder="Search feed"
 							placeholderTextColor={colors.placeholder}
 							value={searchText}
 							onChangeText={setSearchText}
@@ -612,6 +656,40 @@ const HomeScreen = () => {
 							</TouchableOpacity>
 						</View>
 					</View>
+				</Modal>
+				{/* Profile Picture Modal */}
+				<Modal
+					visible={!!modalPic}
+					transparent
+					animationType="fade"
+					onRequestClose={() => setModalPic(null)}
+				>
+					<TouchableOpacity
+						activeOpacity={1}
+						style={{
+							flex: 1,
+							backgroundColor: 'rgba(0,0,0,0.85)',
+							justifyContent: 'center',
+							alignItems: 'center'
+						}}
+						onPress={() => setModalPic(null)}
+					>
+						{modalPic && (
+							<Image
+								source={{ uri: modalPic }}
+								style={{
+									width: 280,
+									height: 280,
+									borderRadius: 140,
+									backgroundColor: '#222',
+									borderWidth: 3,
+									borderColor: '#fff',
+								}}
+								resizeMode="cover"
+							/>
+						)}
+						<Text style={{ color: '#fff', marginTop: 18, fontSize: 14, opacity: 0.7 }}>Tap anywhere to close</Text>
+					</TouchableOpacity>
 				</Modal>
 			</View>
 		</SafeAreaView>
@@ -870,5 +948,13 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 	},
 });
+
+// Supported URL types in this app (for link previews):
+// - YouTube (youtube.com, youtu.be)
+// - Spotify (open.spotify.com)
+// - Apple Music (music.apple.com)
+// - Instagram (instagram.com)
+// - Facebook (facebook.com)
+// All other URLs are shown as plain clickable links without preview.
 
 export default HomeScreen;
